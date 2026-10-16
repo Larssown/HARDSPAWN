@@ -35,12 +35,12 @@ Första gången kan macOS fråga om Godot får ta emot inkommande anslutningar. 
 ## Pickups
 Du börjar varje liv med maskingeväret. Hagelgevär, raketgevär och railgun ligger alltid på samma platser och kommer tillbaka efter att någon har tagit dem.
 
-- **Hagelgevär:** sydvästra rummet nära en ramp.
-- **Raketgevär:** öppet i mitten.
-- **Railgun:** övre norra gången, nåbar via ramp eller hopp-padd.
+- **Hagelgevär:** sydvästra förrådsrummet.
+- **Raketgevär:** huvudrummet i mitten.
+- **Railgun:** övre norra rummet, nåbar via ramp eller hopp-padd.
 - **Grönt kors:** +25 HP. **Blå sfär:** +100 HP, upp till 200. **Gul armor:** +50 armor.
 
-Kartan har ett öppet mittparti, fyra sidorrum, övre gångar och flera vägar upp. Ammunitionsregler och slutliga tider för återkomst bestäms senare.
+Kartan har tak över alla rum, förskjutna passager och korridorer som binder samman huvudrummet, sidrummen och de övre avsatserna. Layouten är en egen bana inspirerad av känslan i Q3DM6. Ammunitionsregler och slutliga tider för återkomst bestäms senare.
 
 ## Var saker finns (för den som vill pilla)
 - `scripts/player.gd`: rörelsekänsla (konstanterna högst upp)

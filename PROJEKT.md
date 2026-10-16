@@ -35,11 +35,12 @@ Realism är inte ett mål.
 | 2026-10-16 | Kartan ska bli en **riktig bana i stil med Quake 3 Arena / Quake 4 multiplayer** (flera våningar, korridorer och rum). |
 | 2026-10-16 | Versionshantering med **git**. Commits görs med e-postadressen **larson.patrik@gmail.com**. |
 | 2026-10-16 | Koden ligger på Patriks **privata** GitHub: **https://github.com/Larssown/HARDSPAWN** (privat repo). Jobbkontot (patrik-turbin / turbin.se) ska **aldrig** användas för det här projektet. |
-| 2026-10-16 | Patrik har sagt **kör** för den nya kartan och vapenpickups på fasta platser. Arbetet med dessa är påbörjat. Ammunitionens regler och slutliga respawntider är fortfarande öppna frågor. |
+| 2026-10-16 | Patrik har sagt **kör** för den nya kartan och vapenpickups på fasta platser. Ammunitionens regler och slutliga respawntider är fortfarande öppna frågor. |
+| 2026-10-16 | Kartan ska påminna om **Q3DM6:s känsla med tak, rum och korridorer**. Den öppna, fyrkantiga och symmetriska arenan ska ersättas av en egen, sluten och osymmetrisk layout. |
 
 ## 4. Pågående
-- Ny, egen karta med flera nivåer och korridorer.
-- Vapenpickups på fasta platser. Alla andra items behåller fasta platser.
+- Den första egna, takförsedda rumsbanan finns i spelet: förskjutna dörrar, sidokorridorer, höjdskillnader och flera rundor mellan rummen. Layouten ska speltestas och justeras efter Patriks feedback.
+- Vapenpickups på fasta platser finns på kartan. Alla andra items behåller fasta platser.
 - Ammunitionsreglerna ingår ännu inte i det beslutade arbetet.
 
 ### Föreslagen plan för kartan och pickups (förslag från Claude, INTE beslutat av Patrik)

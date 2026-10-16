@@ -22,11 +22,34 @@ func _run() -> void:
 	# Runtime baking completes before the server publishes the polygons.
 	await get_tree().create_timer(1.0).timeout
 	for item in world.pickups:
-		if item.kind == "weapon":
-			var route := NavigationServer3D.map_get_path(nav_map, Vector3(8, 0, 11), item.position, true)
-			if route.size() < 2 or route[-1].distance_to(item.position) > 2.5:
-				_fail("Weapon pickup has no walkable route: %d" % item.weapon_id)
-				return
+		var route := NavigationServer3D.map_get_path(nav_map, Vector3(8, 0, 11), item.position, true)
+		if route.size() < 2 or route[-1].distance_to(item.position) > 2.5:
+			_fail("Pickup has no walkable route: %s at %s" % [item.kind, item.position])
+			return
+	for spawn in world.arena.spawn_points:
+		var spawn_pos: Vector3 = spawn[0]
+		var route := NavigationServer3D.map_get_path(nav_map, Vector3(8, 0, 11), spawn_pos, true)
+		if route.size() < 2 or route[-1].distance_to(spawn_pos) > 2.5:
+			_fail("Spawn has no walkable route: %s" % spawn_pos)
+			return
+		var body_check := PhysicsShapeQueryParameters3D.new()
+		var sphere := SphereShape3D.new()
+		sphere.radius = 0.35
+		body_check.shape = sphere
+		body_check.transform = Transform3D(Basis.IDENTITY, spawn_pos + Vector3(0, 1.0, 0))
+		body_check.collision_mask = 1
+		if not world.get_world_3d().direct_space_state.intersect_shape(body_check).is_empty():
+			_fail("Spawn intersects solid geometry: %s" % spawn_pos)
+			return
+	for room in [Vector3(0, 0, 0), Vector3(-23, 0, 0), Vector3(23, 0, 0),
+			Vector3(0, 0, -24), Vector3(0, 0, 24),
+			Vector3(-24, 0, -24), Vector3(24, 0, -24),
+			Vector3(-24, 0, 24), Vector3(24, 0, 24)]:
+		var query := PhysicsRayQueryParameters3D.create(room + Vector3(0, 1, 0),
+			room + Vector3(0, 15, 0), 1)
+		if world.get_world_3d().direct_space_state.intersect_ray(query).is_empty():
+			_fail("Room has no ceiling: %s" % room)
+			return
 	player.select_weapon(Weapons.RAIL)
 	if player.weapon != Weapons.MG:
 		_fail("Uncollected weapon could be selected")
@@ -58,7 +81,7 @@ func _run() -> void:
 	if player.weapon != Weapons.MG or player.owned_weapons != 1:
 		_fail("Loadout did not reset on respawn")
 		return
-	print("PASS: map routes, fixed weapon pickups, host grant, respawn timer and MG-only restart")
+	print("PASS: covered rooms, spawn and pickup routes, host grant, respawn timer and MG-only restart")
 	get_tree().quit(0)
 
 

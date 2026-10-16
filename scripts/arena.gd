@@ -1,9 +1,9 @@
 class_name Arena
 extends Node3D
-## Ironworks: an original, compact industrial deathmatch map.
-## The centre is exposed; four side chambers, upper galleries and ramps keep
-## players circulating. Geometry is deliberately simple until the route layout
-## has been playtested. All item positions are fixed and shared by every peer.
+## Ironworks: an original, enclosed industrial deathmatch map.
+## Offset doors connect covered chambers, narrow corridors and three upper
+## ledges. There is no long cross-map sightline or mirrored four-side layout.
+## All item positions are fixed and shared by every peer.
 
 const HALF := 32.0
 
@@ -152,90 +152,131 @@ func _ramp(low: Vector3, high: Vector3, width: float) -> void:
 		sb.add_child(rail)
 
 
+func _partition_x(x: float, openings: Array, height := 10.7) -> void:
+	var from := -32.0
+	for gap in openings:
+		if gap[0] > from:
+			_wall_x(x, from, gap[0], height)
+		# Low lintels make the gaps read as doorways, not wall-height slots.
+		_box(Vector3(x, (height + 5.5) * 0.5, (gap[0] + gap[1]) * 0.5),
+			Vector3(0.9, height - 5.5, gap[1] - gap[0]), _steel_mat)
+		from = gap[1]
+	if from < 32.0:
+		_wall_x(x, from, 32.0, height)
+
+
+func _partition_z(z: float, openings: Array, height := 10.7) -> void:
+	var from := -32.0
+	for gap in openings:
+		if gap[0] > from:
+			_wall_z(z, from, gap[0], height)
+		_box(Vector3((gap[0] + gap[1]) * 0.5, (height + 5.5) * 0.5, z),
+			Vector3(gap[1] - gap[0], height - 5.5, 0.9), _steel_mat)
+		from = gap[1]
+	if from < 32.0:
+		_wall_z(z, from, 32.0, height)
+
+
+func _roof(x: float, z: float, width: float, depth: float, height: float) -> void:
+	_box(Vector3(x, height, z), Vector3(width, 0.65, depth), _steel_mat)
+	_deco(Vector3(x, height - 0.36, z), Vector3(width - 1.2, 0.06, depth - 1.2), _grate_mat)
+
+
 func _geometry() -> void:
-	# Arena shell. The tall perimeter encloses the map; the inner, low walls
-	# form rooms without hiding the upper-level fights.
+	# The nine connected chambers have different proportions and roof heights.
+	# Doorways are offset rather than opposite each other, forcing turns and
+	# making the main combat loops read as rooms and corridors.
 	_box(Vector3(0, -0.5, 0), Vector3(68, 1, 68), _floor_mat)
-	for s in [-1.0, 1.0]:
-		_box(Vector3(33 * s, 7, 0), Vector3(2, 14, 68), _wall_mat)
-		_box(Vector3(0, 7, 33 * s), Vector3(68, 14, 2), _wall_mat)
+	_box(Vector3(-33, 6, 0), Vector3(2, 12, 68), _wall_mat)
+	_box(Vector3(33, 6, 0), Vector3(2, 12, 68), _wall_mat)
+	_box(Vector3(0, 6, -33), Vector3(68, 12, 2), _wall_mat)
+	_box(Vector3(0, 6, 33), Vector3(68, 12, 2), _wall_mat)
 
-	# Each wall has three wide doorways. This gives a looping ground route
-	# through the side rooms instead of four disconnected corners.
-	for z in [-15.0, 15.0]:
-		for segment in [[-31.0, -24.0], [-16.0, -6.0], [6.0, 16.0], [24.0, 31.0]]:
-			_wall_z(z, segment[0], segment[1])
-	for x in [-15.0, 15.0]:
-		for segment in [[-31.0, -24.0], [-16.0, -6.0], [6.0, 16.0], [24.0, 31.0]]:
-			_wall_x(x, segment[0], segment[1])
+	_partition_x(-14.0, [[-27.0, -22.0], [-5.0, 0.0], [20.0, 25.0]])
+	_partition_x(15.0, [[-26.0, -21.0], [3.0, 8.0], [21.0, 26.0]])
+	_partition_z(-15.0, [[-27.0, -22.0], [-2.0, 3.0], [20.0, 25.0]])
+	_partition_z(16.0, [[-26.0, -21.0], [5.0, 10.0], [22.0, 27.0]])
 
-	# Four upper galleries, all reachable by a long ramp from a different
-	# corner. A narrow bridge connects east and west above the open atrium.
-	_box(Vector3(0, 3.75, -23), Vector3(19, 0.5, 7), _steel_mat)
-	_box(Vector3(0, 3.75, 23), Vector3(19, 0.5, 7), _steel_mat)
-	_box(Vector3(23, 3.75, 0), Vector3(7, 0.5, 19), _steel_mat)
-	_box(Vector3(-23, 3.75, 0), Vector3(7, 0.5, 19), _steel_mat)
-	_box(Vector3(0, 3.75, -8.5), Vector3(43, 0.5, 3), _grate_mat)
-	_ramp(Vector3(-24, 0, -22), Vector3(-9, 4, -23), 4.0)
-	_ramp(Vector3(24, 0, 22), Vector3(9, 4, 23), 4.0)
-	_ramp(Vector3(22, 0, -24), Vector3(23, 4, -9), 4.0)
-	_ramp(Vector3(-22, 0, 24), Vector3(-23, 4, 9), 4.0)
+	# Doglegs break up the long sightlines inside the side chambers.
+	_wall_z(-3.0, -20.0, -15.0, 5.5)
+	_wall_x(-22.0, 4.0, 14.0, 5.5)
+	_wall_z(-10.0, 20.0, 31.0, 5.5)
+	_wall_x(28.0, 6.0, 14.0, 5.5)
+	_wall_z(-24.0, -31.0, -23.0, 5.5)
+	_wall_x(-23.0, -31.0, -24.0, 5.5)
+	_wall_x(24.0, -31.0, -24.0, 5.5)
+	_wall_z(25.0, 17.0, 23.0, 5.5)
+	# Two broken walls give the main room a winding rocket-fight route.
+	_wall_z(-5.0, -12.0, -5.0, 4.8)
+	_wall_x(6.0, 6.0, 14.0, 4.8)
 
-	# Structural columns, upper-floor supports and low combat cover.
-	for sx in [-1.0, 1.0]:
-		for sz in [-1.0, 1.0]:
-			_box(Vector3(11 * sx, 3, 11 * sz), Vector3(1.5, 6, 1.5), _steel_mat)
-			_box(Vector3(7 * sx, 0.8, 7 * sz), Vector3(2.2, 1.6, 2.2), _rust_mat)
-			_box(Vector3(27 * sx, 2, 7 * sz), Vector3(1.2, 4, 1.2), _steel_mat)
-			_box(Vector3(7 * sx, 2, 27 * sz), Vector3(1.2, 4, 1.2), _steel_mat)
-			# Solid ceilings cap the corner maintenance bays.
-			_box(Vector3(24 * sx, 7.8, 24 * sz), Vector3(12, 0.5, 12), _steel_mat)
-			_deco(Vector3(24 * sx, 7.48, 24 * sz), Vector3(10, 0.08, 10), _grate_mat)
-	for s in [-1.0, 1.0]:
-		_box(Vector3(21 * s, 0.7, 13), Vector3(3.0, 1.4, 1.4), _steel_mat)
-		_box(Vector3(13, 0.7, 21 * s), Vector3(1.4, 1.4, 3.0), _steel_mat)
+	# Upper ledges stay inside three different rooms. Long ramps give bots a
+	# reliable route; pads give human players a fast alternative.
+	_box(Vector3(-27.0, 3.75, 9.0), Vector3(8, 0.5, 10), _steel_mat)
+	_ramp(Vector3(-27, 0, -13), Vector3(-27, 4, 4), 3.5)
+	_box(Vector3(24.0, 3.75, -3.0), Vector3(10, 0.5, 10), _steel_mat)
+	_ramp(Vector3(23, 0, 14), Vector3(23, 4, 2), 4.0)
+	_box(Vector3(3.0, 3.75, -24.0), Vector3(7, 0.5, 10), _steel_mat)
+	_ramp(Vector3(-12, 0, -24), Vector3(0, 4, -24), 4.0)
+	# A short mezzanine overlooks the reactor room without spanning the map.
+	_box(Vector3(0, 3.75, 10.0), Vector3(11, 0.5, 5), _grate_mat)
+	_ramp(Vector3(-10, 0, 4), Vector3(-5, 4, 10), 3.5)
+
+	# Roofs close every room. The central ceiling is taller than the corridors.
+	_roof(0.5, 0.5, 28, 30, 10.5)
+	_roof(-23.0, 0.5, 18, 30, 8.2)
+	_roof(23.5, 0.5, 17, 30, 9.2)
+	_roof(0.5, -23.5, 28, 17, 9.0)
+	_roof(0.5, 24.0, 28, 16, 7.5)
+	_roof(-23.0, -23.5, 18, 17, 7.0)
+	_roof(23.5, -23.5, 17, 17, 7.0)
+	_roof(-23.0, 24.0, 18, 16, 7.0)
+	_roof(23.5, 24.0, 17, 16, 7.0)
+
+	# A few pieces of cover, never placed on a doorway, ramp or pickup.
+	_box(Vector3(-7, 1.1, 5), Vector3(2.4, 2.2, 2.4), _rust_mat)
+	_box(Vector3(9, 1.1, -7), Vector3(2.4, 2.2, 2.4), _rust_mat)
+	_box(Vector3(-27, 1.0, 22), Vector3(2.3, 2.0, 2.3), _steel_mat)
+	_box(Vector3(27, 1.0, -22), Vector3(2.3, 2.0, 2.3), _steel_mat)
+	_box(Vector3(2, 1.0, 25), Vector3(3.0, 2.0, 2.0), _rust_mat)
 
 
 func _decor() -> void:
-	# Repeated metalwork gives the prototype a heavy industrial rhythm while
-	# keeping all sightlines, collision and pickup routes easy to inspect.
-	for s in [-1.0, 1.0]:
-		_deco(Vector3(31.8 * s, 2.8, 0), Vector3(0.16, 0.2, 63), _rust_mat)
-		_deco(Vector3(0, 2.8, 31.8 * s), Vector3(63, 0.2, 0.16), _rust_mat)
-		_deco(Vector3(31.8 * s, 10.8, 0), Vector3(0.16, 0.25, 63), _steel_mat)
-		_deco(Vector3(0, 10.8, 31.8 * s), Vector3(63, 0.25, 0.16), _steel_mat)
-		for i in range(-3, 4):
-			var at := float(i) * 8.0
-			_deco(Vector3(31.75 * s, 6.5, at), Vector3(0.24, 12.5, 0.45), _steel_mat)
-			_deco(Vector3(at, 6.5, 31.75 * s), Vector3(0.45, 12.5, 0.24), _steel_mat)
-	# Grate bars on the bridge and safety-color edging on upper floors.
-	for x in range(-19, 20, 2):
-		_deco(Vector3(float(x), 4.02, -8.5), Vector3(0.10, 0.04, 2.8), _rust_mat)
-	for z in [-26.5, -19.5, 19.5, 26.5]:
-		_deco(Vector3(0, 3.95, z), Vector3(18.5, 0.1, 0.12), _rust_mat)
-	for x in [-26.5, -19.5, 19.5, 26.5]:
-		_deco(Vector3(x, 3.95, 0), Vector3(0.12, 0.1, 18.5), _rust_mat)
-	# Warm ceiling fixtures and exposed pipe runs in the side chambers.
-	for x in [-23.0, 23.0]:
-		for z in [-23.0, 23.0]:
-			_deco(Vector3(x, 7.4, z), Vector3(3.0, 0.06, 0.45), _light_mat)
-	for s in [-1.0, 1.0]:
-		_deco(Vector3(29.5 * s, 6, 0), Vector3(0.28, 0.28, 49), _rust_mat)
-		_deco(Vector3(0, 6, 29.5 * s), Vector3(49, 0.28, 0.28), _rust_mat)
+	# Door frames and roof beams make the enclosed route legible.
+	for x in [-14.0, 15.0]:
+		for z in [-24.0, -2.5, 6.0, 23.0]:
+			_deco(Vector3(x, 6.8, z), Vector3(1.2, 0.22, 4.5), _rust_mat)
+	for z in [-15.0, 16.0]:
+		for x in [-24.5, 0.5, 7.5, 24.0]:
+			_deco(Vector3(x, 6.8, z), Vector3(4.5, 0.22, 1.2), _rust_mat)
+	for x in [-23.0, 0.0, 23.0]:
+		for z in [-23.0, 0.0, 24.0]:
+			_deco(Vector3(x, 6.35 if absf(x) > 15.0 or absf(z) > 15.0 else 9.8, z),
+				Vector3(3.4, 0.08, 0.48), _light_mat)
+	# Exposed pipes along the long side corridors.
+	_deco(Vector3(-30.8, 5.7, 0), Vector3(0.32, 0.32, 27), _rust_mat)
+	_deco(Vector3(30.8, 6.1, 0), Vector3(0.32, 0.32, 27), _rust_mat)
+	_deco(Vector3(0, 6.5, 30.7), Vector3(26, 0.28, 0.28), _rust_mat)
+	# Rust-colored edge strips on each raised ledge.
+	for at in [Vector3(-27, 4.03, 4), Vector3(24, 4.03, -8), Vector3(3, 4.03, -29)]:
+		_deco(at, Vector3(8.5, 0.08, 0.12), _rust_mat)
 
 
 func _lights() -> void:
-	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-55, 25, 0)
-	sun.light_color = Color(0.72, 0.65, 0.55)
-	sun.light_energy = 0.8
-	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 80.0
-	add_child(sun)
-	_omni(Vector3(0, 11, 0), Color(0.86, 0.68, 0.48), 1.6, 26.0)
-	for sx in [-1.0, 1.0]:
-		for sz in [-1.0, 1.0]:
-			_omni(Vector3(23 * sx, 7.1, 23 * sz), Color(1.0, 0.57, 0.29), 1.1, 11.0)
+	# Local warm fixtures light the covered rooms; no sunlight enters.
+	var lights := [
+		[Vector3(0, 8.7, 0), 1.9, 19.0],
+		[Vector3(-23, 6.5, 0), 1.5, 15.0],
+		[Vector3(23, 7.3, 0), 1.5, 15.0],
+		[Vector3(0, 7.3, -24), 1.3, 14.0],
+		[Vector3(0, 6.1, 24), 1.3, 14.0],
+		[Vector3(-23, 5.8, -24), 1.0, 12.0],
+		[Vector3(23, 5.8, -24), 1.0, 12.0],
+		[Vector3(-23, 5.8, 24), 1.0, 12.0],
+		[Vector3(23, 5.8, 24), 1.0, 12.0],
+	]
+	for item in lights:
+		_omni(item[0], Color(1.0, 0.68, 0.42), item[1], item[2])
 
 
 func _omni(pos: Vector3, color: Color, energy: float, light_range: float) -> void:
@@ -279,32 +320,32 @@ func _pickup(kind: String, pos: Vector3, weapon_id := -1) -> void:
 
 
 func _gameplay_points() -> void:
-	# Four quick vertical routes, plus long ramps for bots and deliberate
-	# movement. Railgun is on the exposed north gallery, rockets at centre.
-	_add_pad(Vector3(0, 0, -11), Vector3(0, 4, -23), 2.2)
-	_add_pad(Vector3(0, 0, 11), Vector3(0, 4, 23), 2.2)
-	_add_pad(Vector3(11, 0, 0), Vector3(23, 4, 0), 2.2)
-	_add_pad(Vector3(-11, 0, 0), Vector3(-23, 4, 0), 2.2)
+	# The gun loop crosses three distinct rooms instead of one open square.
+	_add_pad(Vector3(2, 0, -17), Vector3(3, 4, -24), 1.1)
+	_add_pad(Vector3(-27, 0, 15), Vector3(-27, 4, 9), 1.0)
+	_add_pad(Vector3(17, 0, -12), Vector3(24, 4, -3), 1.0)
 
 	var ground_spawns := [
-		Vector3(-8, 0, -11), Vector3(8, 0, 11),
-		Vector3(22, 0, 11), Vector3(-22, 0, -11),
-		Vector3(-9, 0, 24), Vector3(9, 0, -24),
-		Vector3(25, 0, -7), Vector3(-25, 0, 7),
+		Vector3(-18, 0, 10), Vector3(-23, 0, 27),
+		Vector3(8, 0, 25), Vector3(29, 0, 9),
+		Vector3(22, 0, -27), Vector3(-27, 0, -20),
+		Vector3(-1, 0, 3), Vector3(8, 0, -24),
 	]
 	var upper_spawns := [
-		Vector3(5, 4, -23), Vector3(-5, 4, 23),
-		Vector3(23, 4, 5), Vector3(-23, 4, -5),
+		Vector3(5, 4, -28), Vector3(-28, 4, 13),
+		Vector3(28, 4, -7),
 	]
 	for pos: Vector3 in ground_spawns + upper_spawns:
 		spawn_points.append([pos + Vector3(0, 0.1, 0), atan2(pos.x, pos.z)])
 		waypoints.append(pos)
 
-	_pickup("weapon", Vector3(-22, 0, 21), Weapons.SHOTGUN)
-	_pickup("weapon", Vector3(0, 0, 0), Weapons.ROCKET)
-	_pickup("weapon", Vector3(0, 4, -23), Weapons.RAIL)
-	for pos: Vector3 in [Vector3(7, 0, 12), Vector3(-7, 0, -12),
-			Vector3(25, 0, 13), Vector3(-25, 0, -13)]:
+	_pickup("weapon", Vector3(-23, 0, 23), Weapons.SHOTGUN)
+	_pickup("weapon", Vector3(1, 0, 1), Weapons.ROCKET)
+	_pickup("weapon", Vector3(3, 4, -24), Weapons.RAIL)
+	for pos: Vector3 in [
+		Vector3(-24, 0, -22), Vector3(24, 0, 22),
+		Vector3(10, 0, -8), Vector3(-7, 0, 24),
+	]:
 		_pickup("health", pos)
-	_pickup("armor", Vector3(-23, 4, 0))
-	_pickup("mega", Vector3(23, 4, 0))
+	_pickup("armor", Vector3(-27, 4, 9))
+	_pickup("mega", Vector3(24, 4, -3))
