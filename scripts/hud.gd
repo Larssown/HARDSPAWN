@@ -5,6 +5,7 @@ extends CanvasLayer
 
 class Crosshair extends Control:
 	var hit_t := 0.0
+	var hit_power := 0.0
 
 	func _process(delta: float) -> void:
 		hit_t = maxf(hit_t - delta, 0.0)
@@ -17,9 +18,11 @@ class Crosshair extends Control:
 		for d in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
 			draw_line(c + d * 7.0, c + d * 14.0, col, 2.0)
 		if hit_t > 0.0:
-			var hc := Color(1.0, 0.35, 0.3, clampf(hit_t / 0.15, 0.0, 1.0))
+			var heavy := clampf(hit_power / 90.0, 0.0, 1.0)
+			var hc := Color(1.0, 0.45 - heavy * 0.20, 0.3, clampf(hit_t / 0.18, 0.0, 1.0))
 			for d in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
-				draw_line(c + d * 7.0, c + d * 15.0, hc, 3.0)
+				draw_line(c + d * (7.0 + heavy * 2.0), c + d * (15.0 + heavy * 3.0),
+					hc, 3.0 + heavy * 1.5)
 
 
 var player: Player = null
@@ -278,8 +281,14 @@ func _show_center(text: String, col: Color, time := 2.0) -> void:
 
 
 func _on_hit(dmg: float) -> void:
-	crosshair.hit_t = 0.15
-	Sfx.play_2d("hit", -4.0, clampf(1.4 - dmg / 120.0, 0.7, 1.4))
+	crosshair.hit_power = dmg
+	crosshair.hit_t = 0.22 if dmg >= 50.0 else 0.15
+	if dmg >= 50.0:
+		Sfx.play_2d("hit_heavy", -2.0, clampf(1.05 - dmg / 450.0, 0.78, 1.0))
+		if player:
+			player.add_shake(0.10)
+	else:
+		Sfx.play_2d("hit", -4.0, clampf(1.4 - dmg / 120.0, 0.7, 1.4))
 
 
 func _on_kill(victim_id: int, killer_id: int, weapon: int) -> void:

@@ -172,6 +172,18 @@ static func impact(parent: Node, pos: Vector3, color: Color) -> void:
 	_particles(parent, pos, color, 6, 2.0, 6.0, 0.3, 0.04)
 
 
+static func shotgun_blast(parent: Node, pos: Vector3, color: Color) -> void:
+	_flash_sphere(parent, pos, color.lerp(Color.WHITE, 0.45), 0.12, 2.2, 0.09, 3.2)
+	_light_flash(parent, pos, color, 4.0, 5.0, 0.10)
+	_particles(parent, pos, color, 8, 2.0, 5.0, 0.16, 0.04, 0.0)
+
+
+static func rail_impact(parent: Node, pos: Vector3, color: Color) -> void:
+	_flash_sphere(parent, pos, color.lerp(Color.WHITE, 0.5), 0.16, 3.0, 0.22, 4.0)
+	_light_flash(parent, pos, color, 4.0, 6.0, 0.16)
+	_particles(parent, pos, color, 12, 3.0, 8.0, 0.34, 0.06)
+
+
 static func explosion(parent: Node, pos: Vector3) -> void:
 	_flash_sphere(parent, pos, Color(1.0, 0.85, 0.5), 0.5, 4.0, 0.18, 4.0)
 	_flash_sphere(parent, pos, Color(1.0, 0.4, 0.1), 0.6, 6.5, 0.45, 2.5)

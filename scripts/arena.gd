@@ -57,13 +57,26 @@ func _material(color: Color, metallic: float, roughness: float) -> StandardMater
 	return m
 
 
+func _surface_material(asset: String, tint: Color, metallic: float, roughness: float, tile_scale: float) -> StandardMaterial3D:
+	var m := _material(tint, metallic, roughness)
+	var folder := "res://assets/materials/%s/" % asset
+	m.albedo_texture = load(folder + "Color.jpg")
+	m.normal_enabled = true
+	m.normal_texture = load(folder + "NormalGL.jpg")
+	m.normal_scale = 0.55
+	m.roughness_texture = load(folder + "Roughness.jpg")
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3.ONE * tile_scale
+	return m
+
+
 func _make_materials() -> void:
-	_floor_mat = _material(Color(0.45, 0.43, 0.40), 0.03, 0.92)
-	_wall_mat = _material(Color(0.45, 0.43, 0.40), 0.04, 0.88)
-	_steel_mat = _material(Color(0.34, 0.36, 0.37), 0.16, 0.75)
+	_floor_mat = _surface_material("Concrete022", Color(0.78, 0.76, 0.73), 0.03, 0.88, 0.32)
+	_wall_mat = _surface_material("PaintedBricks004", Color(0.82, 0.83, 0.82), 0.04, 0.86, 0.42)
+	_steel_mat = _surface_material("MetalPlates013", Color(0.76, 0.77, 0.78), 0.22, 0.70, 0.36)
 	_rust_mat = _material(Color(0.43, 0.26, 0.18), 0.18, 0.84)
 	_grate_mat = _material(Color(0.29, 0.31, 0.32), 0.18, 0.76)
-	_ceiling_mat = _material(Color(0.39, 0.40, 0.40), 0.04, 0.90)
+	_ceiling_mat = _surface_material("PaintedMetal012", Color(0.62, 0.63, 0.63), 0.12, 0.82, 0.36)
 	_light_mat = _material(Color(0.95, 0.79, 0.53), 0.15, 0.42)
 	_light_mat.emission_enabled = true
 	_light_mat.emission = Color(1.0, 0.70, 0.34)

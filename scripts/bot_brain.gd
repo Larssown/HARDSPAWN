@@ -76,7 +76,7 @@ func think(delta: float) -> void:
 			fwd = 1.0
 		elif dist < pref - 3.0:
 			fwd = -1.0
-		move = (side * _strafe + to_t * fwd).normalized()
+		move = _avoid_wall((side * _strafe + to_t * fwd).normalized())
 		if randf() < delta * 0.8:
 			p.in_jump = true
 	else:
@@ -154,22 +154,37 @@ func _choose_weapon(dist: float, delta: float) -> void:
 	_weapon_t -= delta
 	if _weapon_t > 0.0:
 		return
-	_weapon_t = randf_range(2.0, 4.0)
-	var w: int = Weapons.MG
-	if dist < 8.0:
-		w = Weapons.SHOTGUN if randf() < 0.75 else Weapons.ROCKET
-	elif dist > 26.0:
-		w = Weapons.RAIL if randf() < 0.7 else Weapons.MG
-	else:
-		w = [Weapons.MG, Weapons.ROCKET, Weapons.RAIL, Weapons.ROCKET].pick_random()
-	if p.has_weapon(w):
-		p.select_weapon(w)
-		return
-	var order := [Weapons.SHOTGUN, Weapons.ROCKET, Weapons.MG, Weapons.RAIL] if dist < 8.0 else [Weapons.RAIL, Weapons.ROCKET, Weapons.MG, Weapons.SHOTGUN]
-	for candidate in order:
-		if p.has_weapon(candidate):
-			p.select_weapon(candidate)
-			return
+	_weapon_t = 0.7
+	var best := Weapons.MG
+	if dist < 7.0 and p.has_weapon(Weapons.SHOTGUN):
+		best = Weapons.SHOTGUN
+	elif dist >= 18.0 and p.has_weapon(Weapons.RAIL):
+		best = Weapons.RAIL
+	elif dist >= 5.0 and p.has_weapon(Weapons.ROCKET):
+		best = Weapons.ROCKET
+	elif dist < 12.0 and p.has_weapon(Weapons.SHOTGUN):
+		best = Weapons.SHOTGUN
+	elif p.has_weapon(Weapons.RAIL):
+		best = Weapons.RAIL
+	p.select_weapon(best)
+
+
+func _clear_ahead(dir: Vector3) -> bool:
+	var from := p.global_position + Vector3(0, 0.9, 0)
+	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 2.2, 1)
+	return p.get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+
+
+func _avoid_wall(wanted: Vector3) -> Vector3:
+	if wanted == Vector3.ZERO or _clear_ahead(wanted):
+		return wanted
+	var side := wanted.rotated(Vector3.UP, _strafe * PI * 0.5)
+	if _clear_ahead(side):
+		return side
+	side = -side
+	if _clear_ahead(side):
+		return side
+	return -wanted
 
 
 func _pick_goal() -> Vector3:
@@ -182,7 +197,7 @@ func _pick_goal() -> Vector3:
 		var best_d := 1e9
 		for pk in Game.world.pickups:
 			if pk.available and pk.kind == "health":
-				var d := p.global_position.distance_to(pk.position)
+				var d := _route_cost(pk.position)
 				if d < best_d:
 					best_d = d
 					best = pk.position
@@ -192,13 +207,25 @@ func _pick_goal() -> Vector3:
 	var nearest_d := 1e9
 	for pk in Game.world.pickups:
 		if pk.available and pk.kind == "weapon" and not p.has_weapon(pk.weapon_id):
-			var d := p.global_position.distance_to(pk.position)
+			var d := _route_cost(pk.position)
 			if d < nearest_d:
 				nearest_d = d
 				nearest = pk.position
 	if nearest_d < 1e9:
 		return nearest
 	return Game.world.arena.waypoints.pick_random()
+
+
+func _route_cost(destination: Vector3) -> float:
+	var route := NavigationServer3D.map_get_path(
+		p.get_world_3d().navigation_map, p.global_position, destination, true)
+	if route.size() < 2:
+		return p.global_position.distance_to(destination) + absf(
+			p.global_position.y - destination.y) * 6.0
+	var length := 0.0
+	for i in range(1, route.size()):
+		length += route[i - 1].distance_to(route[i])
+	return length
 
 
 func _follow_path(delta: float) -> Vector3:
@@ -237,4 +264,6 @@ func _check_stuck(delta: float, wanted: Vector3) -> void:
 		p.in_jump = true
 	if _stuck_t > 1.6:
 		_stuck_t = 0.0
+		_strafe = -_strafe
 		_goal_valid = false
+		_repath_t = 0.0

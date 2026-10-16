@@ -379,7 +379,7 @@ func launch(vel: Vector3) -> void:
 func apply_knockback(impulse: Vector3) -> void:
 	velocity += impulse
 	if impulse.y > 0.5:
-		_air_lock = 0.15
+		_air_lock = 0.22
 
 
 # --- Weapons --------------------------------------------------------------------
@@ -417,7 +417,8 @@ func _fire() -> void:
 	var dmg_by_victim := {}
 	for i in int(w.pellets):
 		var dir := aim
-		if spread > 0.0:
+		# One straight pellet makes a centred close-range blast dependable.
+		if spread > 0.0 and not (weapon == Weapons.SHOTGUN and i == 0):
 			var a := randf() * TAU
 			var r := sqrt(randf()) * spread
 			dir = (aim + right * cos(a) * r + up * sin(a) * r).normalized()

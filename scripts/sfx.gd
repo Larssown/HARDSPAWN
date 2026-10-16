@@ -2,7 +2,7 @@ extends Node
 ## Plays one-shot sound effects, either flat (your own sounds) or positioned in the world.
 
 const NAMES := ["mg", "shotgun", "rocket_fire", "explosion", "rail", "jump", "land", "jumppad",
-	"hit", "kill", "pickup_health", "pickup_armor", "pickup_mega", "hurt", "death", "switch",
+	"hit", "hit_heavy", "shotgun_pump", "kill", "pickup_health", "pickup_armor", "pickup_mega", "hurt", "death", "switch",
 	"respawn", "match_end", "minute"]
 
 var streams := {}
@@ -41,3 +41,12 @@ func play_3d(sound: String, pos: Vector3, vol_db := 0.0, pitch := 1.0) -> void:
 	p.global_position = pos
 	p.finished.connect(p.queue_free)
 	p.play()
+
+
+
+func play_2d_delayed(sound: String, delay: float, vol_db := 0.0, pitch := 1.0) -> void:
+	get_tree().create_timer(delay).timeout.connect(play_2d.bind(sound, vol_db, pitch))
+
+
+func play_3d_delayed(sound: String, delay: float, pos: Vector3, vol_db := 0.0, pitch := 1.0) -> void:
+	get_tree().create_timer(delay).timeout.connect(play_3d.bind(sound, pos, vol_db, pitch))

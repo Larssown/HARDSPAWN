@@ -6,3 +6,6 @@
 
 # macOS
 .DS_Store
+
+# Original downloaded texture packs stay local; selected maps live in assets/materials.
+assets/textures/

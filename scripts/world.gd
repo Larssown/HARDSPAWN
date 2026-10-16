@@ -205,12 +205,28 @@ func _do_shot_fx(shooter_id: int, weapon: int, from: Vector3, ends: PackedVector
 	var col: Color = w.color
 	if weapon == Weapons.RAIL and shooter:
 		col = shooter.color
-	for e in ends:
-		if w.fx == "rail":
+	if weapon == Weapons.SHOTGUN:
+		Fx.shotgun_blast(fx_root, from, col)
+	for i in ends.size():
+		var e := ends[i]
+		if weapon == Weapons.RAIL:
 			Fx.rail(fx_root, from, e, col)
+			Fx.rail_impact(fx_root, e, col)
+		elif weapon == Weapons.SHOTGUN:
+			# A handful of visible pellet trails reads as a blast without twelve
+			# full tracers and particle bursts per shot.
+			if i % 3 == 0:
+				Fx.tracer(fx_root, from, e, col)
+			if i % 2 == 0:
+				Fx.impact(fx_root, e, col)
 		else:
 			Fx.tracer(fx_root, from, e, col)
-		Fx.impact(fx_root, e, col)
+			Fx.impact(fx_root, e, col)
+	if weapon == Weapons.SHOTGUN:
+		if is_local:
+			Sfx.play_2d_delayed("shotgun_pump", 0.32, -7.0)
+		else:
+			Sfx.play_3d_delayed("shotgun_pump", 0.32, from, -7.0)
 
 
 func fire_rocket(owner_id: int, from: Vector3, dir: Vector3) -> void:

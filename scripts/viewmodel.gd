@@ -125,8 +125,8 @@ func kick(amount: float) -> void:
 
 
 func flash() -> void:
-	_flash_t = 0.05
-	_flash_light.light_energy = 4.0
+	_flash_t = 0.085 if player.weapon == Weapons.SHOTGUN else 0.07 if player.weapon == Weapons.RAIL else 0.05
+	_flash_light.light_energy = 6.0 if player.weapon == Weapons.SHOTGUN else 5.0
 
 
 func get_muzzle() -> Vector3:

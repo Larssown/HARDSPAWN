@@ -172,6 +172,18 @@ def main(out_dir):
 
     write(out_dir, "minute", mix((tone(0.15, 1000, 10), 1.0), (pad(tone(0.15, 1000, 10), 0.25), 1.0)), 0.5)
 
+    # A lower, weightier confirmation for a direct rail hit or strong shotgun blast.
+    write(out_dir, "hit_heavy", mix(
+        (env_exp(sweep(0.18, 520, 190), 22), 0.85),
+        (env_exp(highpass(noise(0.06), 0.22), 58), 0.4),
+        (tone(0.18, 105, 18, ((1, 1.0), (2, 0.4))), 0.8)), 0.62)
+
+    # Separate mechanical return, delayed after the shotgun's initial boom.
+    write(out_dir, "shotgun_pump", mix(
+        (env_exp(highpass(noise(0.13), 0.2), 28), 0.7),
+        (env_exp(sweep(0.13, 750, 330), 34), 0.35),
+        (pad(env_exp(highpass(noise(0.06), 0.35), 70), 0.075), 0.55)), 0.45)
+
 
 if __name__ == "__main__":
     main(sys.argv[1] if len(sys.argv) > 1 else "assets/sfx")

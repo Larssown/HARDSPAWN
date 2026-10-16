@@ -453,6 +453,9 @@ func _server_explosion(owner_id: int, pos: Vector3, direct_id: int, rocket_name:
 			if dir.length() < 0.05:
 				dir = Vector3.UP
 			knock = dir.normalized() * KNOCKBACK * (0.35 + 0.65 * f)
+		if pid == owner_id and knock != Vector3.ZERO and pos.y < p.global_position.y + 0.6:
+			# A near-ground self blast keeps useful lift even with imperfect aim.
+			knock.y = maxf(knock.y, 10.0 * (1.0 - d / SPLASH_RADIUS))
 		if pid == direct_id:
 			dmg = maxf(dmg, DIRECT_DAMAGE)
 		if dmg > 0.0 or knock != Vector3.ZERO:
