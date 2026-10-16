@@ -41,6 +41,24 @@ Patrik har sagt **"avvakta"** om dessa. Börja inte på dem innan Patrik säger 
 - Den nya kartan i Quake-stil.
 - Vapenpickups, ammunition och fasta platser för items.
 
+### Föreslagen plan för kartan och pickups (förslag från Claude, INTE beslutat av Patrik)
+Det här är utgångsläget när Patrik säger "kör". Ändra inget utan att Patrik godkänt det.
+- **Ordning:** kartan och vapenplaceringen byggs tillsammans, eftersom placeringen är en del av kartans design. Grafiken (texturer, ljus) görs när banans form är klar, så att inget texturerat behöver byggas om.
+- **Startvapen:** bara maskingevär, med begränsad ammo.
+- **Ammunition:** varje vapen ger lite ammo när man plockar upp det. Ammolådor per vapentyp ligger utspridda.
+- **Respawntider (förslag):** vapen 5 s, ammo 15 s, hälsa 20 s, armor 25 s, Mega Health 35 s. Alltid samma plats och tid, så att man kan lära sig timingen.
+- **Placering, risk mot belöning:**
+  - Railgun på en utsatt hög plats som man når via hopp-padd eller rocket jump.
+  - Raketgeväret i kartans hetaste korsning.
+  - Hagelgeväret nära en spawnpunkt, för att kunna försvara sig direkt.
+  - Mega Health och tung armor på var sin sida av kartan, så att man behöver röra sig runt.
+- **Kartlayout:** medelstor för 4–8 spelare. Flera våningar, korridorer som binder ihop rum, ett öppet mittparti, hopp-paddar, teleporter och några smygvägar. Inspirerad av klassiska Quake-banor men med egen layout (ingen kopia av befintliga banor).
+- **Grafik (Quake 4-stil):**
+  - Riktiga PBR-texturer: metallpaneler, galler, rost och betong.
+  - Förberäknad belysning (LightmapGI), som ger snygga mjuka skuggor och är snålt för datorn.
+  - Riktiga modeller för spelare och vapen.
+  - Gratis CC0-assets används när Patrik godkänt nedladdning (se öppna frågor).
+
 ## 5. Öppna frågor (Patrik har inte bestämt)
 - Hur ska ammunitionen fungera (ammolådor, hur mycket ammo vapen ger)?
 - Hur lång tid tar det innan vapen och items kommer tillbaka?
