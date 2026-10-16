@@ -1,0 +1,8 @@
+# Godot
+.godot/
+/android/
+/build/
+/export/
+
+# macOS
+.DS_Store

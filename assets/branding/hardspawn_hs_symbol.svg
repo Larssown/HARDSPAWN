@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 240 256"><g id="hs-monogram">
+  <path id="h" d="M39 32H75V103H165V32H201V224H165V140H75V224H39Z" fill="#EDF1F2"/>
+  <path id="s-separation" d="M176 57 C153 44 118 43 97 53 C73 65 71 88 95 102 C108 110 140 116 157 128 C184 148 173 179 152 192 C130 206 94 201 65 183" fill="none" stroke="#121920" stroke-width="38" stroke-linecap="square" stroke-linejoin="round"/>
+  <path id="s" d="M176 57 C153 44 118 43 97 53 C73 65 71 88 95 102 C108 110 140 116 157 128 C184 148 173 179 152 192 C130 206 94 201 65 183" fill="none" stroke="#FF5547" stroke-width="27" stroke-linecap="square" stroke-linejoin="round"/>
+  <path id="front-crossbar" d="M75 111H126V140H75Z" fill="#EDF1F2"/>
+</g></svg>

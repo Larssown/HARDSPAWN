@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="560" viewBox="660 130 280 280">
+<defs>
+  <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f7f8f6"/>
+    <stop offset="0.58" stop-color="#dfe4e5"/>
+    <stop offset="1" stop-color="#aeb9c0"/>
+  </linearGradient>
+  <linearGradient id="ember" x1="0" y1="0" x2="0.8" y2="1">
+    <stop offset="0" stop-color="#ff8e62"/>
+    <stop offset="0.42" stop-color="#f04434"/>
+    <stop offset="1" stop-color="#a8202a"/>
+  </linearGradient>
+</defs>
+
+  <g id="outer-ring" fill="none" stroke="#cad3d7" stroke-width="16" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M741 166 L707 199 L685 236 L685 254"/>
+    <path d="M859 166 L893 199 L915 236 L915 254"/>
+    <path d="M685 286 L685 304 L707 341 L741 374"/>
+    <path d="M915 286 L915 304 L893 341 L859 374"/>
+  </g>
+  <g id="ring-accents" fill="none" stroke="#eb4537" stroke-width="16" stroke-linecap="square">
+    <path d="M770 151 L787 151"/>
+    <path d="M813 151 L830 151"/>
+    <path d="M770 389 L787 389"/>
+    <path d="M813 389 L830 389"/>
+  </g>
+</svg>

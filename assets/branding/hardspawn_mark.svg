@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="560" viewBox="660 130 280 280">
+<defs>
+  <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f7f8f6"/>
+    <stop offset="0.58" stop-color="#dfe4e5"/>
+    <stop offset="1" stop-color="#aeb9c0"/>
+  </linearGradient>
+  <linearGradient id="ember" x1="0" y1="0" x2="0.8" y2="1">
+    <stop offset="0" stop-color="#ff8e62"/>
+    <stop offset="0.42" stop-color="#f04434"/>
+    <stop offset="1" stop-color="#a8202a"/>
+  </linearGradient>
+</defs>
+
+  <path id="mark-h" fill="url(#ember)" d="M741 220 L763 198 L763 247 L837 247 L837 198 L859 220 L859 324 L837 346 L837 285 L763 285 L763 346 L741 324 Z"/>
+  <path id="mark-notch" fill="#171c23" d="M789 247 L811 247 L800 285 L778 285 Z"/>
+</svg>
