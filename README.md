@@ -22,7 +22,7 @@ Första gången kan macOS fråga om Godot får ta emot inkommande anslutningar. 
 | Mellanslag | Hoppa (håll inne för bunny hop) |
 | Vänster mus | Skjuta |
 | Höger mus | Zooma (railgun-sikte) |
-| 1 2 3 4 / scrollhjul | Maskingevär, hagelgevär, raketgevär, railgun |
+| 1 2 3 4 / scrollhjul | Växla mellan vapen du har plockat upp |
 | Q | Föregående vapen |
 | Tab | Poängtavla |
 | Esc | Paus: känslighet, lämna spelet |
@@ -30,10 +30,17 @@ Första gången kan macOS fråga om Godot får ta emot inkommande anslutningar. 
 ## Movement-tips
 - **Rocket jump:** hoppa, titta rakt ner och skjut en raket. Du tappar lite hälsa men flyger högt.
 - **Strafe jump:** håll inne hopp, håll A eller D och dra musen åt samma håll i luften. Farten (`ups` längst ner) ökar.
-- **Hopp-paddar** (gröna) skjuter upp dig till mittplattformen, där Mega Health finns.
+- **Hopp-paddar** (rostfärgade med ljus markering) skjuter upp dig till de övre gångarna.
 
 ## Pickups
-Grönt kors = +25 HP. Blå sfär (mitten) = +100 HP, upp till 200. Gul = +50 armor.
+Du börjar varje liv med maskingeväret. Hagelgevär, raketgevär och railgun ligger alltid på samma platser och kommer tillbaka efter att någon har tagit dem.
+
+- **Hagelgevär:** sydvästra rummet nära en ramp.
+- **Raketgevär:** öppet i mitten.
+- **Railgun:** övre norra gången, nåbar via ramp eller hopp-padd.
+- **Grönt kors:** +25 HP. **Blå sfär:** +100 HP, upp till 200. **Gul armor:** +50 armor.
+
+Kartan har ett öppet mittparti, fyra sidorrum, övre gångar och flera vägar upp. Ammunitionsregler och slutliga tider för återkomst bestäms senare.
 
 ## Var saker finns (för den som vill pilla)
 - `scripts/player.gd`: rörelsekänsla (konstanterna högst upp)

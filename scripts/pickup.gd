@@ -1,10 +1,13 @@
 class_name PickupNode
 extends Node3D
-## A floating, spinning item: health (+25), mega health (+100) or armor (+50).
+## A fixed-location item. Weapon models are simple silhouettes until the
+## approved map geometry is playtested.
 
-const COLORS := {"health": Color(0.3, 1.0, 0.4), "mega": Color(0.3, 0.6, 1.0), "armor": Color(1.0, 0.8, 0.2)}
+const COLORS := {"health": Color(0.35, 0.8, 0.42), "mega": Color(0.4, 0.65, 0.9),
+	"armor": Color(0.92, 0.68, 0.28)}
 
 var kind := "health"
+var weapon_id := Weapons.SHOTGUN
 var available := true
 var timer := 0.0
 var _item: Node3D
@@ -14,15 +17,15 @@ var _t := 0.0
 
 func _ready() -> void:
 	_t = randf() * TAU
-	var col: Color = COLORS[kind]
-	var mat := Fx.neon_material(col, 3.0)
+	var col: Color = Weapons.LIST[weapon_id].color if kind == "weapon" else COLORS[kind]
+	var mat := _material(col, 0.5)
 	var base := MeshInstance3D.new()
 	var bc := CylinderMesh.new()
 	bc.top_radius = 0.6
 	bc.bottom_radius = 0.65
 	bc.height = 0.05
 	base.mesh = bc
-	base.material_override = Fx.neon_material(col, 0.8)
+	base.material_override = _material(Color(0.18, 0.19, 0.19), 0.65)
 	base.position.y = 0.03
 	add_child(base)
 	_item = Node3D.new()
@@ -37,14 +40,16 @@ func _ready() -> void:
 			s.radius = 0.38
 			s.height = 0.76
 			_mesh(s, mat)
-			_mesh(_box(Vector3(0.9, 0.1, 0.1)), Fx.neon_material(Color.WHITE, 2.0))
+			_mesh(_box(Vector3(0.9, 0.1, 0.1)), _material(Color(0.9, 0.9, 0.86), 0.55))
 		"armor":
 			_mesh(_box(Vector3(0.55, 0.6, 0.14)), mat)
-			_mesh(_box(Vector3(0.62, 0.12, 0.18)), Fx.neon_material(Color.WHITE, 1.5))
+			_mesh(_box(Vector3(0.62, 0.12, 0.18)), _material(Color(0.9, 0.9, 0.86), 0.55))
+		"weapon":
+			_build_weapon(mat)
 	_light = OmniLight3D.new()
 	_light.light_color = col
-	_light.light_energy = 1.0
-	_light.omni_range = 3.5
+	_light.light_energy = 0.65
+	_light.omni_range = 2.8
 	_light.position.y = 1.0
 	add_child(_light)
 
@@ -55,11 +60,48 @@ func _box(size: Vector3) -> BoxMesh:
 	return b
 
 
+func _material(col: Color, metal: float) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = col
+	mat.metallic = metal
+	mat.roughness = 0.55
+	mat.emission_enabled = true
+	mat.emission = col * 0.25
+	return mat
+
+
 func _mesh(mesh: Mesh, mat: Material) -> void:
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
 	mi.material_override = mat
 	_item.add_child(mi)
+
+
+func _part(size: Vector3, pos: Vector3, mat: Material) -> void:
+	var mi := MeshInstance3D.new()
+	mi.mesh = _box(size)
+	mi.material_override = mat
+	mi.position = pos
+	_item.add_child(mi)
+
+
+func _build_weapon(accent: Material) -> void:
+	var metal := _material(Color(0.24, 0.25, 0.25), 0.75)
+	match weapon_id:
+		Weapons.SHOTGUN:
+			_part(Vector3(0.95, 0.24, 0.3), Vector3.ZERO, metal)
+			for s in [-1.0, 1.0]:
+				_part(Vector3(0.86, 0.1, 0.07), Vector3(0.16, 0.11, s * 0.1), accent)
+			_part(Vector3(0.18, 0.38, 0.2), Vector3(-0.18, -0.24, 0), metal)
+		Weapons.ROCKET:
+			_part(Vector3(0.95, 0.38, 0.38), Vector3.ZERO, metal)
+			_part(Vector3(0.17, 0.43, 0.43), Vector3(0.38, 0, 0), accent)
+			_part(Vector3(0.36, 0.16, 0.58), Vector3(-0.15, -0.23, 0), metal)
+		Weapons.RAIL:
+			_part(Vector3(1.25, 0.17, 0.23), Vector3.ZERO, metal)
+			for x in [-0.45, -0.1, 0.25, 0.55]:
+				_part(Vector3(0.09, 0.32, 0.36), Vector3(x, 0, 0), accent)
+			_part(Vector3(0.22, 0.3, 0.18), Vector3(-0.22, -0.21, 0), metal)
 
 
 func _process(delta: float) -> void:

@@ -35,14 +35,16 @@ Realism är inte ett mål.
 | 2026-10-16 | Kartan ska bli en **riktig bana i stil med Quake 3 Arena / Quake 4 multiplayer** (flera våningar, korridorer och rum). |
 | 2026-10-16 | Versionshantering med **git**. Commits görs med e-postadressen **larson.patrik@gmail.com**. |
 | 2026-10-16 | Koden ligger på Patriks **privata** GitHub: **https://github.com/Larssown/HARDSPAWN** (privat repo). Jobbkontot (patrik-turbin / turbin.se) ska **aldrig** användas för det här projektet. |
+| 2026-10-16 | Patrik har sagt **kör** för den nya kartan och vapenpickups på fasta platser. Arbetet med dessa är påbörjat. Ammunitionens regler och slutliga respawntider är fortfarande öppna frågor. |
 
-## 4. Väntar (beslutat men inte påbörjat)
-Patrik har sagt **"avvakta"** om dessa. Börja inte på dem innan Patrik säger till.
-- Den nya kartan i Quake-stil.
-- Vapenpickups, ammunition och fasta platser för items.
+## 4. Pågående
+- Ny, egen karta med flera nivåer och korridorer.
+- Vapenpickups på fasta platser. Alla andra items behåller fasta platser.
+- Ammunitionsreglerna ingår ännu inte i det beslutade arbetet.
 
 ### Föreslagen plan för kartan och pickups (förslag från Claude, INTE beslutat av Patrik)
-Det här är utgångsläget när Patrik säger "kör". Ändra inget utan att Patrik godkänt det.
+Det här är tidigare idéer. Patrik har godkänt att arbetet med karta och vapenpickups börjar,
+men har inte beslutat om alla detaljer i detta förslag.
 - **Ordning:** kartan och vapenplaceringen byggs tillsammans, eftersom placeringen är en del av kartans design. Grafiken (texturer, ljus) görs när banans form är klar, så att inget texturerat behöver byggas om.
 - **Startvapen:** bara maskingevär, med begränsad ammo.
 - **Ammunition:** varje vapen ger lite ammo när man plockar upp det. Ammolådor per vapentyp ligger utspridda.

@@ -28,7 +28,8 @@ var dead := false
 var spawn_count := 0
 
 var weapon := Weapons.MG
-var last_weapon := Weapons.SHOTGUN
+var last_weapon := Weapons.MG
+var owned_weapons := 1 << Weapons.MG
 var cooldown := 0.0
 var zooming := false
 
@@ -200,9 +201,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		head.rotation.x = pitch
 		mouse_delta += mm.relative
 	elif event.is_action_pressed("weapon_next"):
-		select_weapon((weapon + 1) % Weapons.LIST.size())
+		_cycle_weapon(1)
 	elif event.is_action_pressed("weapon_prev"):
-		select_weapon((weapon + Weapons.LIST.size() - 1) % Weapons.LIST.size())
+		_cycle_weapon(-1)
 
 
 func _read_human_input() -> void:
@@ -225,7 +226,7 @@ func _read_human_input() -> void:
 
 
 func select_weapon(i: int) -> void:
-	if i == weapon or i < 0 or i >= Weapons.LIST.size():
+	if i == weapon or not has_weapon(i):
 		return
 	last_weapon = weapon
 	weapon = i
@@ -234,6 +235,39 @@ func select_weapon(i: int) -> void:
 	if viewmodel:
 		viewmodel.show_weapon(i)
 		Sfx.play_2d("switch", -8.0)
+
+
+func has_weapon(i: int) -> bool:
+	return i >= 0 and i < Weapons.LIST.size() and (owned_weapons & (1 << i)) != 0
+
+
+func grant_weapon(i: int) -> void:
+	if i < 0 or i >= Weapons.LIST.size() or has_weapon(i):
+		return
+	owned_weapons |= 1 << i
+	last_weapon = weapon
+	weapon = i
+	cooldown = maxf(cooldown, 0.15)
+	_update_gun_color()
+	if viewmodel:
+		viewmodel.show_weapon(i)
+
+
+func set_loadout(mask: int, active_weapon: int) -> void:
+	owned_weapons = mask | (1 << Weapons.MG)
+	weapon = active_weapon if has_weapon(active_weapon) else Weapons.MG
+	last_weapon = Weapons.MG
+	_update_gun_color()
+	if viewmodel:
+		viewmodel.show_weapon(weapon)
+
+
+func _cycle_weapon(step: int) -> void:
+	for offset in range(1, Weapons.LIST.size() + 1):
+		var candidate := posmod(weapon + offset * step, Weapons.LIST.size())
+		if has_weapon(candidate):
+			select_weapon(candidate)
+			return
 
 
 # --- Simulation -----------------------------------------------------------------
@@ -468,6 +502,10 @@ func respawn(pos: Vector3, new_yaw: float) -> void:
 	dead = false
 	health = 100.0
 	armor = 0.0
+	owned_weapons = 1 << Weapons.MG
+	weapon = Weapons.MG
+	last_weapon = Weapons.MG
+	_update_gun_color()
 	spawn_count += 1
 	collision_layer = 2
 	cooldown = 0.3
@@ -477,6 +515,7 @@ func respawn(pos: Vector3, new_yaw: float) -> void:
 	name_label.visible = not is_local_human
 	if viewmodel:
 		viewmodel.visible = true
+		viewmodel.show_weapon(weapon)
 	if camera:
 		camera.position = Vector3.ZERO
 		camera.rotation = Vector3.ZERO

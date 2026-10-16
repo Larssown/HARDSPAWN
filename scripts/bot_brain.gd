@@ -162,7 +162,14 @@ func _choose_weapon(dist: float, delta: float) -> void:
 		w = Weapons.RAIL if randf() < 0.7 else Weapons.MG
 	else:
 		w = [Weapons.MG, Weapons.ROCKET, Weapons.RAIL, Weapons.ROCKET].pick_random()
-	p.select_weapon(w)
+	if p.has_weapon(w):
+		p.select_weapon(w)
+		return
+	var order := [Weapons.SHOTGUN, Weapons.ROCKET, Weapons.MG, Weapons.RAIL] if dist < 8.0 else [Weapons.RAIL, Weapons.ROCKET, Weapons.MG, Weapons.SHOTGUN]
+	for candidate in order:
+		if p.has_weapon(candidate):
+			p.select_weapon(candidate)
+			return
 
 
 func _pick_goal() -> Vector3:
@@ -181,6 +188,16 @@ func _pick_goal() -> Vector3:
 					best = pk.position
 		if best_d < 1e9:
 			return best
+	var nearest := Vector3.ZERO
+	var nearest_d := 1e9
+	for pk in Game.world.pickups:
+		if pk.available and pk.kind == "weapon" and not p.has_weapon(pk.weapon_id):
+			var d := p.global_position.distance_to(pk.position)
+			if d < nearest_d:
+				nearest_d = d
+				nearest = pk.position
+	if nearest_d < 1e9:
+		return nearest
 	return Game.world.arena.waypoints.pick_random()
 
 

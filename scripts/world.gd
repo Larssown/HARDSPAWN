@@ -7,6 +7,8 @@ const PICKUP_INFO := {
 	"health": {"respawn": 20.0, "sfx": "pickup_health"},
 	"mega": {"respawn": 35.0, "sfx": "pickup_mega"},
 	"armor": {"respawn": 25.0, "sfx": "pickup_armor"},
+	# Temporary tuning value; final weapon timing is still Patrik's decision.
+	"weapon": {"respawn": 10.0, "sfx": "switch"},
 }
 
 var arena: Arena
@@ -33,6 +35,8 @@ func _ready() -> void:
 		var d: Dictionary = arena.pickup_defs[i]
 		var pk := PickupNode.new()
 		pk.kind = d.kind
+		if d.has("weapon"):
+			pk.weapon_id = d.weapon
 		pk.name = "Pickup%d" % i
 		pk.position = d.pos
 		add_child(pk)
@@ -103,16 +107,21 @@ func _physics_process(delta: float) -> void:
 			var pl := c as Player
 			if pl == null or pl.dead:
 				continue
-			if pl.global_position.distance_to(pk.position) < 1.5 and _try_take(pl, pk.kind):
+			if pl.global_position.distance_to(pk.position) < 1.5 and _try_take(pl, pk):
 				pk.timer = PICKUP_INFO[pk.kind].respawn
 				_set_pickup(i, false)
 				break
 
 
-func _try_take(pl: Player, kind: String) -> bool:
+func _try_take(pl: Player, pk: PickupNode) -> bool:
 	var hp := pl.health
 	var ar := pl.armor
-	match kind:
+	match pk.kind:
+		"weapon":
+			if pl.has_weapon(pk.weapon_id):
+				return false
+			_grant_weapon.rpc(pl.peer_id, pk.weapon_id)
+			return true
 		"health":
 			if hp >= 100.0:
 				return false
@@ -127,6 +136,13 @@ func _try_take(pl: Player, kind: String) -> bool:
 			ar = minf(ar + 50.0, 150.0)
 	Game.server_set_vitals(pl.peer_id, hp, ar)
 	return true
+
+
+@rpc("authority", "call_local", "reliable")
+func _grant_weapon(player_id: int, weapon_id: int) -> void:
+	var pl := get_player(player_id)
+	if pl:
+		pl.grant_weapon(weapon_id)
 
 
 func _set_pickup(i: int, avail: bool) -> void:

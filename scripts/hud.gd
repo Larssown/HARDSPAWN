@@ -359,7 +359,8 @@ func _process(delta: float) -> void:
 	lbl_weapon.text = w.name
 	lbl_weapon.add_theme_color_override("font_color", w.color)
 	for i in weapon_slots.size():
-		weapon_slots[i].modulate = Color(1, 1, 1, 1) if i == player.weapon else Color(1, 1, 1, 0.35)
+		var alpha := 1.0 if i == player.weapon else (0.6 if player.has_weapon(i) else 0.18)
+		weapon_slots[i].modulate = Color(1, 1, 1, alpha)
 
 	var ups := Vector2(player.velocity.x, player.velocity.z).length() * 39.37
 	lbl_speed.text = "%d ups" % int(ups)
