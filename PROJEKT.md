@@ -34,6 +34,7 @@ Realism är inte ett mål.
 | 2026-10-16 | **Alla vapen, hälsa, armor och andra items ligger alltid på samma fasta platser** och kommer tillbaka på samma plats, så att man kan lära sig kartan och planera sina drag. |
 | 2026-10-16 | Kartan ska bli en **riktig bana i stil med Quake 3 Arena / Quake 4 multiplayer** (flera våningar, korridorer och rum). |
 | 2026-10-16 | Versionshantering med **git**. Commits görs med e-postadressen **larson.patrik@gmail.com**. |
+| 2026-10-16 | Koden ligger på Patriks **privata** GitHub: **https://github.com/Larssown/HARDSPAWN** (privat repo). Jobbkontot (patrik-turbin / turbin.se) ska **aldrig** användas för det här projektet. |
 
 ## 4. Väntar (beslutat men inte påbörjat)
 Patrik har sagt **"avvakta"** om dessa. Börja inte på dem innan Patrik säger till.
@@ -54,11 +55,14 @@ Patrik har sagt **"avvakta"** om dessa. Börja inte på dem innan Patrik säger 
 4. **Committa ofta med git** och skriv i commit-meddelandet vilken AI som gjort ändringen,
    t.ex. `[Claude] Lägg till ammolådor` eller `[ChatGPT] Ny menybakgrund`.
    Kör `git status` och `git log` innan du börjar, så att du vet vad som ändrats.
-5. **Testa innan du säger att något är klart.** Helst headless, så att ingen spelruta tar över
+5. **Ladda upp till GitHub** med `git push`. Repot är redan inställt att använda en egen SSH-nyckel
+   (`~/.ssh/hardspawn_github`, en deploy key som bara gäller detta repo, via `core.sshCommand`).
+   Ändra inte de inställningarna och använd inte `gh` eller jobbkontot. Kör `git pull` innan du börjar.
+6. **Testa innan du säger att något är klart.** Helst headless, så att ingen spelruta tar över
    Patriks mus och tangentbord:
    `godot --headless --path . -- --host --bots=4 --quit=15`
    (test av klient: `-- --join=127.0.0.1 --quit=10` i en andra instans).
-6. Skriv till Patrik **på svenska och utan programmeringsjargong.**
+7. Skriv till Patrik **på svenska och utan programmeringsjargong.**
 
 ## 7. Teknisk översikt (för AI:erna)
 - `scripts/game.gd` (autoload `Game`): inställningar, LAN (ENet port 7777, upptäckt via UDP-broadcast på 7778), poäng, skada och matchflöde. **Hosten (peer 1) bestämmer** över hälsa, kills, pickups och botar.
