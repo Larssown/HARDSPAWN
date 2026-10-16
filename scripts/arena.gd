@@ -18,7 +18,9 @@ var _wall_mat: StandardMaterial3D
 var _steel_mat: StandardMaterial3D
 var _rust_mat: StandardMaterial3D
 var _grate_mat: StandardMaterial3D
+var _ceiling_mat: StandardMaterial3D
 var _light_mat: StandardMaterial3D
+var _guide_mat: StandardMaterial3D
 
 
 func build() -> void:
@@ -56,15 +58,17 @@ func _material(color: Color, metallic: float, roughness: float) -> StandardMater
 
 
 func _make_materials() -> void:
-	_floor_mat = _material(Color(0.24, 0.235, 0.22), 0.05, 0.9)
-	_wall_mat = _material(Color(0.32, 0.30, 0.28), 0.08, 0.86)
-	_steel_mat = _material(Color(0.20, 0.22, 0.23), 0.62, 0.6)
-	_rust_mat = _material(Color(0.35, 0.19, 0.12), 0.32, 0.82)
-	_grate_mat = _material(Color(0.12, 0.14, 0.15), 0.72, 0.55)
-	_light_mat = _material(Color(0.72, 0.45, 0.22), 0.25, 0.45)
+	_floor_mat = _material(Color(0.45, 0.43, 0.40), 0.03, 0.92)
+	_wall_mat = _material(Color(0.45, 0.43, 0.40), 0.04, 0.88)
+	_steel_mat = _material(Color(0.34, 0.36, 0.37), 0.16, 0.75)
+	_rust_mat = _material(Color(0.43, 0.26, 0.18), 0.18, 0.84)
+	_grate_mat = _material(Color(0.29, 0.31, 0.32), 0.18, 0.76)
+	_ceiling_mat = _material(Color(0.39, 0.40, 0.40), 0.04, 0.90)
+	_light_mat = _material(Color(0.95, 0.79, 0.53), 0.15, 0.42)
 	_light_mat.emission_enabled = true
-	_light_mat.emission = Color(0.55, 0.27, 0.08)
-	_light_mat.emission_energy_multiplier = 0.7
+	_light_mat.emission = Color(1.0, 0.70, 0.34)
+	_light_mat.emission_energy_multiplier = 1.6
+	_guide_mat = _material(Color(0.57, 0.40, 0.19), 0.10, 0.84)
 
 
 func _environment() -> void:
@@ -79,13 +83,11 @@ func _environment() -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.40, 0.39, 0.37)
-	env.ambient_light_energy = 0.7
+	env.ambient_light_color = Color(0.56, 0.56, 0.54)
+	env.ambient_light_energy = 1.05
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.glow_enabled = false
-	env.fog_enabled = true
-	env.fog_light_color = Color(0.13, 0.11, 0.10)
-	env.fog_density = 0.003
+	env.fog_enabled = false
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -158,8 +160,15 @@ func _partition_x(x: float, openings: Array, height := 10.7) -> void:
 		if gap[0] > from:
 			_wall_x(x, from, gap[0], height)
 		# Low lintels make the gaps read as doorways, not wall-height slots.
-		_box(Vector3(x, (height + 5.5) * 0.5, (gap[0] + gap[1]) * 0.5),
-			Vector3(0.9, height - 5.5, gap[1] - gap[0]), _steel_mat)
+		var middle: float = (gap[0] + gap[1]) * 0.5
+		var width: float = gap[1] - gap[0]
+		_box(Vector3(x, (height + 5.5) * 0.5, middle),
+			Vector3(0.9, height - 5.5, width), _steel_mat)
+		_deco(Vector3(x, 0.025, middle), Vector3(2.5, 0.05, width - 0.8), _guide_mat)
+		for side in [-1.0, 1.0]:
+			_deco(Vector3(x + side * 0.52, 5.25, middle),
+				Vector3(0.10, 0.16, width - 0.8), _light_mat)
+		_omni(Vector3(x, 4.7, middle), Color(1.0, 0.83, 0.62), 1.1, 9.0)
 		from = gap[1]
 	if from < 32.0:
 		_wall_x(x, from, 32.0, height)
@@ -170,8 +179,15 @@ func _partition_z(z: float, openings: Array, height := 10.7) -> void:
 	for gap in openings:
 		if gap[0] > from:
 			_wall_z(z, from, gap[0], height)
-		_box(Vector3((gap[0] + gap[1]) * 0.5, (height + 5.5) * 0.5, z),
-			Vector3(gap[1] - gap[0], height - 5.5, 0.9), _steel_mat)
+		var middle: float = (gap[0] + gap[1]) * 0.5
+		var width: float = gap[1] - gap[0]
+		_box(Vector3(middle, (height + 5.5) * 0.5, z),
+			Vector3(width, height - 5.5, 0.9), _steel_mat)
+		_deco(Vector3(middle, 0.025, z), Vector3(width - 0.8, 0.05, 2.5), _guide_mat)
+		for side in [-1.0, 1.0]:
+			_deco(Vector3(middle, 5.25, z + side * 0.52),
+				Vector3(width - 0.8, 0.16, 0.10), _light_mat)
+		_omni(Vector3(middle, 4.7, z), Color(1.0, 0.83, 0.62), 1.1, 9.0)
 		from = gap[1]
 	if from < 32.0:
 		_wall_z(z, from, 32.0, height)
@@ -179,7 +195,7 @@ func _partition_z(z: float, openings: Array, height := 10.7) -> void:
 
 func _roof(x: float, z: float, width: float, depth: float, height: float) -> void:
 	_box(Vector3(x, height, z), Vector3(width, 0.65, depth), _steel_mat)
-	_deco(Vector3(x, height - 0.36, z), Vector3(width - 1.2, 0.06, depth - 1.2), _grate_mat)
+	_deco(Vector3(x, height - 0.36, z), Vector3(width - 1.2, 0.06, depth - 1.2), _ceiling_mat)
 
 
 func _geometry() -> void:
@@ -221,6 +237,11 @@ func _geometry() -> void:
 	# A short mezzanine overlooks the reactor room without spanning the map.
 	_box(Vector3(0, 3.75, 10.0), Vector3(11, 0.5, 5), _grate_mat)
 	_ramp(Vector3(-10, 0, 4), Vector3(-5, 4, 10), 3.5)
+	# Light undersides keep the ground-level routes visible beneath ledges.
+	_deco(Vector3(-27, 3.42, 9), Vector3(7.4, 0.06, 9.4), _ceiling_mat)
+	_deco(Vector3(24, 3.42, -3), Vector3(9.4, 0.06, 9.4), _ceiling_mat)
+	_deco(Vector3(3, 3.42, -24), Vector3(6.4, 0.06, 9.4), _ceiling_mat)
+	_deco(Vector3(0, 3.42, 10), Vector3(10.4, 0.06, 4.4), _ceiling_mat)
 
 	# Roofs close every room. The central ceiling is taller than the corridors.
 	_roof(0.5, 0.5, 28, 30, 10.5)
@@ -265,18 +286,22 @@ func _decor() -> void:
 func _lights() -> void:
 	# Local warm fixtures light the covered rooms; no sunlight enters.
 	var lights := [
-		[Vector3(0, 8.7, 0), 1.9, 19.0],
-		[Vector3(-23, 6.5, 0), 1.5, 15.0],
-		[Vector3(23, 7.3, 0), 1.5, 15.0],
-		[Vector3(0, 7.3, -24), 1.3, 14.0],
-		[Vector3(0, 6.1, 24), 1.3, 14.0],
-		[Vector3(-23, 5.8, -24), 1.0, 12.0],
-		[Vector3(23, 5.8, -24), 1.0, 12.0],
-		[Vector3(-23, 5.8, 24), 1.0, 12.0],
-		[Vector3(23, 5.8, 24), 1.0, 12.0],
+		[Vector3(0, 8.7, 0), 2.6, 23.0],
+		[Vector3(-23, 6.5, 0), 2.0, 18.0],
+		[Vector3(23, 7.3, 0), 2.0, 18.0],
+		[Vector3(0, 7.3, -24), 1.9, 17.0],
+		[Vector3(0, 6.1, 24), 1.9, 17.0],
+		[Vector3(-23, 5.8, -24), 1.5, 15.0],
+		[Vector3(23, 5.8, -24), 1.5, 15.0],
+		[Vector3(-23, 5.8, 24), 1.5, 15.0],
+		[Vector3(23, 5.8, 24), 1.5, 15.0],
+		[Vector3(-27, 2.8, 9), 1.2, 9.0],
+		[Vector3(24, 2.8, -3), 1.2, 9.0],
+		[Vector3(3, 2.8, -24), 1.2, 9.0],
+		[Vector3(0, 2.8, 10), 1.2, 8.0],
 	]
 	for item in lights:
-		_omni(item[0], Color(1.0, 0.68, 0.42), item[1], item[2])
+		_omni(item[0], Color(1.0, 0.84, 0.69), item[1], item[2])
 
 
 func _omni(pos: Vector3, color: Color, energy: float, light_range: float) -> void:

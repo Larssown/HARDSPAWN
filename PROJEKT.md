@@ -37,6 +37,7 @@ Realism är inte ett mål.
 | 2026-10-16 | Koden ligger på Patriks **privata** GitHub: **https://github.com/Larssown/HARDSPAWN** (privat repo). Jobbkontot (patrik-turbin / turbin.se) ska **aldrig** användas för det här projektet. |
 | 2026-10-16 | Patrik har sagt **kör** för den nya kartan och vapenpickups på fasta platser. Ammunitionens regler och slutliga respawntider är fortfarande öppna frågor. |
 | 2026-10-16 | Kartan ska påminna om **Q3DM6:s känsla med tak, rum och korridorer**. Den öppna, fyrkantiga och symmetriska arenan ska ersättas av en egen, sluten och osymmetrisk layout. |
+| 2026-10-16 | Kartan ska vara **lätt att orientera sig i**. Patrik tycker att den första rumsbanan är för mörk; rummen och vägarna framåt ska bli tydligare belysta utan att tappa den industriella stilen. |
 
 ## 4. Pågående
 - Den första egna, takförsedda rumsbanan finns i spelet: förskjutna dörrar, sidokorridorer, höjdskillnader och flera rundor mellan rummen. Layouten ska speltestas och justeras efter Patriks feedback.
