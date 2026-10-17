@@ -41,6 +41,7 @@ Realism är inte ett mål.
 | 2026-10-16 | Patrik har sagt **kör på** för nästa steg: förbättra vapenkänslan med railgun och hagelgevär först, och justera rocket jump och botarnas beteende i den nya kartan. Ammunition väntar fortsatt. |
 | 2026-10-16 | Patrik har lagt 15 nedladdade texturpaket i `assets/textures/` och bett oss välja passande material till spelet. Fyra 1K-material används i kartan; originalpaketen ligger kvar lokalt. |
 | 2026-10-17 | Patrik har lagt Quaternius Sci-Fi Modular Gun Pack i `assets/Guns/` och `assets/Modular Parts/` och bett oss kontrollera och använda passande vapenmodeller. Fyra färdiga glTF-modeller används för spelets fyra vapen; originalpaketen ligger kvar lokalt. |
+| 2026-10-17 | Vapnet i förstapersonsvyn ska hållas nere till höger, med kolven vid bildkanten och pipan snett framåt mot mitten enligt Patriks referensbild. |
 
 ## 4. Pågående
 - Den första egna, takförsedda rumsbanan finns i spelet: förskjutna dörrar, sidokorridorer, höjdskillnader och flera rundor mellan rummen. Layouten ska speltestas och justeras efter Patriks feedback.

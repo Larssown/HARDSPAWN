@@ -2,7 +2,8 @@ class_name Viewmodel
 extends Node3D
 ## First-person imported weapon models with recoil, sway, bob and muzzle flash.
 
-const REST := Vector3(0.24, -0.22, -0.42)
+const REST := Vector3(0.32, -0.40, -0.42)
+const MUZZLE_TIP_X := [0.95, 0.62, 1.31, 1.59]
 
 var player: Player
 var models: Array[Node3D] = []
@@ -14,10 +15,6 @@ var _kick := 0.0
 var _switch := 0.0
 var _sway := Vector2.ZERO
 var _bob_t := 0.0
-const MUZZLE_X := [-0.28, -0.18, -0.39, -0.47]
-const MUZZLE_Z := [-0.55, -0.43, -0.68, -0.78]
-
-
 func _ready() -> void:
 	position = REST
 	scale = Vector3.ONE * 0.8
@@ -25,13 +22,15 @@ func _ready() -> void:
 		var root := Node3D.new()
 		add_child(root)
 		var visual := WeaponVisual.create(i)
-		visual.position = Vector3(0, -0.01, -0.22)
-		visual.rotation.y = deg_to_rad(130.0)
+		visual.position = Vector3(0, -0.01, -0.20)
+		# The supplied guns point along +X. Angle them into the screen and lift
+		# the muzzle so the stock sits low right, like a classic arena FPS view.
+		visual.basis = Basis(Vector3.UP, deg_to_rad(110.0)) * Basis(Vector3.BACK, deg_to_rad(13.0))
 		visual.scale = Vector3.ONE * 0.48
 		root.add_child(visual)
 		var muzzle := Node3D.new()
-		muzzle.position = Vector3(MUZZLE_X[i], 0.03, MUZZLE_Z[i])
-		root.add_child(muzzle)
+		muzzle.position = Vector3(MUZZLE_TIP_X[i], 0.03, 0)
+		visual.add_child(muzzle)
 		models.append(root)
 		muzzles.append(muzzle)
 
@@ -95,7 +94,7 @@ func _process(delta: float) -> void:
 	if _flash_t > 0.0:
 		_flash_t -= delta
 		_flash_mesh.visible = true
-		_flash_mesh.position = muzzles[player.weapon].position + models[player.weapon].position
+		_flash_mesh.position = to_local(muzzles[player.weapon].global_position)
 		_flash_mesh.scale = Vector3.ONE * randf_range(0.5, 1.0)
 	else:
 		_flash_mesh.visible = false
