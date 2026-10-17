@@ -9,3 +9,9 @@
 
 # Original downloaded texture packs stay local; selected maps live in assets/materials.
 assets/textures/
+
+# Original Quaternius download packs stay local; selected glTF files live in assets/models/weapons.
+assets/Guns/
+assets/Modular Parts/
+assets/Guns-*.zip
+assets/Modular Parts-*.zip

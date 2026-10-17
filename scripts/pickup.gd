@@ -1,7 +1,6 @@
 class_name PickupNode
 extends Node3D
-## A fixed-location item. Weapon models are simple silhouettes until the
-## approved map geometry is playtested.
+## A fixed-location item. Weapon pickups share the player's imported models.
 
 const COLORS := {"health": Color(0.35, 0.8, 0.42), "mega": Color(0.4, 0.65, 0.9),
 	"armor": Color(0.92, 0.68, 0.28)}
@@ -45,7 +44,9 @@ func _ready() -> void:
 			_mesh(_box(Vector3(0.55, 0.6, 0.14)), mat)
 			_mesh(_box(Vector3(0.62, 0.12, 0.18)), _material(Color(0.9, 0.9, 0.86), 0.55))
 		"weapon":
-			_build_weapon(mat)
+			var visual := WeaponVisual.create(weapon_id)
+			visual.scale = Vector3.ONE * 0.55
+			_item.add_child(visual)
 	_light = OmniLight3D.new()
 	_light.light_color = col
 	_light.light_energy = 0.65
@@ -75,33 +76,6 @@ func _mesh(mesh: Mesh, mat: Material) -> void:
 	mi.mesh = mesh
 	mi.material_override = mat
 	_item.add_child(mi)
-
-
-func _part(size: Vector3, pos: Vector3, mat: Material) -> void:
-	var mi := MeshInstance3D.new()
-	mi.mesh = _box(size)
-	mi.material_override = mat
-	mi.position = pos
-	_item.add_child(mi)
-
-
-func _build_weapon(accent: Material) -> void:
-	var metal := _material(Color(0.24, 0.25, 0.25), 0.75)
-	match weapon_id:
-		Weapons.SHOTGUN:
-			_part(Vector3(0.95, 0.24, 0.3), Vector3.ZERO, metal)
-			for s in [-1.0, 1.0]:
-				_part(Vector3(0.86, 0.1, 0.07), Vector3(0.16, 0.11, s * 0.1), accent)
-			_part(Vector3(0.18, 0.38, 0.2), Vector3(-0.18, -0.24, 0), metal)
-		Weapons.ROCKET:
-			_part(Vector3(0.95, 0.38, 0.38), Vector3.ZERO, metal)
-			_part(Vector3(0.17, 0.43, 0.43), Vector3(0.38, 0, 0), accent)
-			_part(Vector3(0.36, 0.16, 0.58), Vector3(-0.15, -0.23, 0), metal)
-		Weapons.RAIL:
-			_part(Vector3(1.25, 0.17, 0.23), Vector3.ZERO, metal)
-			for x in [-0.45, -0.1, 0.25, 0.55]:
-				_part(Vector3(0.09, 0.32, 0.36), Vector3(x, 0, 0), accent)
-			_part(Vector3(0.22, 0.3, 0.18), Vector3(-0.22, -0.21, 0), metal)
 
 
 func _process(delta: float) -> void:

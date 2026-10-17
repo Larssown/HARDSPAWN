@@ -40,12 +40,14 @@ Realism är inte ett mål.
 | 2026-10-16 | Kartan ska vara **lätt att orientera sig i**. Patrik tycker att den första rumsbanan är för mörk; rummen och vägarna framåt ska bli tydligare belysta utan att tappa den industriella stilen. |
 | 2026-10-16 | Patrik har sagt **kör på** för nästa steg: förbättra vapenkänslan med railgun och hagelgevär först, och justera rocket jump och botarnas beteende i den nya kartan. Ammunition väntar fortsatt. |
 | 2026-10-16 | Patrik har lagt 15 nedladdade texturpaket i `assets/textures/` och bett oss välja passande material till spelet. Fyra 1K-material används i kartan; originalpaketen ligger kvar lokalt. |
+| 2026-10-17 | Patrik har lagt Quaternius Sci-Fi Modular Gun Pack i `assets/Guns/` och `assets/Modular Parts/` och bett oss kontrollera och använda passande vapenmodeller. Fyra färdiga glTF-modeller används för spelets fyra vapen; originalpaketen ligger kvar lokalt. |
 
 ## 4. Pågående
 - Den första egna, takförsedda rumsbanan finns i spelet: förskjutna dörrar, sidokorridorer, höjdskillnader och flera rundor mellan rummen. Layouten ska speltestas och justeras efter Patriks feedback.
 - Vapenpickups på fasta platser finns på kartan. Alla andra items behåller fasta platser.
 - Första passet för vapenkänsla är på plats: kraftigare träffrespons för rail och hagel, tydligare hagelspridning, rocket jump med sneda markskott och botar som väljer vapen efter avstånd.
 - Kartan använder nu utvalda texturer för golv, väggar, metall och innertak. Ljusa väggar och markerade passager ska fortsatt göra rummen lättlästa.
+- Färdiga lågpolyvapen ersätter de enkla lådmodellerna i spelarens händer och på kartans vapenplatser. Hagelgevär och railgun använder närliggande former ur paketet.
 - Ammunitionsreglerna ingår ännu inte i det beslutade arbetet.
 
 ### Föreslagen plan för kartan och pickups (förslag från Claude, INTE beslutat av Patrik)
