@@ -42,6 +42,7 @@ var brain: BotBrain = null
 var head: Node3D
 var camera: Camera3D = null
 var viewmodel: Viewmodel = null
+var viewmodel_overlay: ViewmodelOverlay = null
 var body_root: Node3D
 var gun_pivot: Node3D
 var gun_accent: StandardMaterial3D
@@ -95,9 +96,10 @@ func _ready() -> void:
 		camera.far = 400.0
 		head.add_child(camera)
 		camera.current = true
-		viewmodel = Viewmodel.new()
-		viewmodel.player = self
-		camera.add_child(viewmodel)
+		viewmodel_overlay = ViewmodelOverlay.new()
+		viewmodel_overlay.player = self
+		add_child(viewmodel_overlay)
+		viewmodel = viewmodel_overlay.model
 		body_root.visible = false
 		name_label.visible = false
 	if is_bot and multiplayer.is_server():

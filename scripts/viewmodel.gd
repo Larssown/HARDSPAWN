@@ -2,8 +2,10 @@ class_name Viewmodel
 extends Node3D
 ## First-person imported weapon models with recoil, sway, bob and muzzle flash.
 
-const REST := Vector3(0.32, -0.40, -0.42)
+const REST := Vector3(0.50, -0.42, -0.42)
 const MUZZLE_TIP_X := [0.95, 0.62, 1.31, 1.59]
+const MODEL_SCALE := [0.9, 0.9, 1.2, 0.9]
+const MODEL_DEPTH := [-0.65, -0.65, -0.55, -0.65]
 
 var player: Player
 var models: Array[Node3D] = []
@@ -22,11 +24,11 @@ func _ready() -> void:
 		var root := Node3D.new()
 		add_child(root)
 		var visual := WeaponVisual.create(i)
-		visual.position = Vector3(0, -0.01, -0.20)
+		visual.position = Vector3(0, -0.01, MODEL_DEPTH[i])
 		# The supplied guns point along +X. Angle them into the screen and lift
 		# the muzzle so the stock sits low right, like a classic arena FPS view.
-		visual.basis = Basis(Vector3.UP, deg_to_rad(110.0)) * Basis(Vector3.BACK, deg_to_rad(13.0))
-		visual.scale = Vector3.ONE * 0.48
+		visual.basis = Basis(Vector3.UP, deg_to_rad(96.0)) * Basis(Vector3.BACK, deg_to_rad(13.0))
+		visual.scale = Vector3.ONE * MODEL_SCALE[i]
 		root.add_child(visual)
 		var muzzle := Node3D.new()
 		muzzle.position = Vector3(MUZZLE_TIP_X[i], 0.03, 0)
@@ -68,7 +70,11 @@ func flash() -> void:
 
 
 func get_muzzle() -> Vector3:
-	return muzzles[player.weapon].global_position
+	# The model is rendered in a separate camera. Convert its tip back into
+	# the gameplay camera's world for rockets and shot effects.
+	var weapon_camera := get_parent() as Camera3D
+	var tip := weapon_camera.to_local(muzzles[player.weapon].global_position)
+	return player.camera.to_global(tip)
 
 
 func _process(delta: float) -> void:

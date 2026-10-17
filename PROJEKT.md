@@ -42,6 +42,7 @@ Realism är inte ett mål.
 | 2026-10-16 | Patrik har lagt 15 nedladdade texturpaket i `assets/textures/` och bett oss välja passande material till spelet. Fyra 1K-material används i kartan; originalpaketen ligger kvar lokalt. |
 | 2026-10-17 | Patrik har lagt Quaternius Sci-Fi Modular Gun Pack i `assets/Guns/` och `assets/Modular Parts/` och bett oss kontrollera och använda passande vapenmodeller. Fyra färdiga glTF-modeller används för spelets fyra vapen; originalpaketen ligger kvar lokalt. |
 | 2026-10-17 | Vapnet i förstapersonsvyn ska hållas nere till höger, med kolven vid bildkanten och pipan snett framåt mot mitten enligt Patriks referensbild. |
+| 2026-10-17 | Patrik vill att vapnen ska vara större i bild och sikta mer rakt fram. Raketgeväret ska fylla mer av nedre högra hörnet, som i den nya referensbilden. |
 
 ## 4. Pågående
 - Den första egna, takförsedda rumsbanan finns i spelet: förskjutna dörrar, sidokorridorer, höjdskillnader och flera rundor mellan rummen. Layouten ska speltestas och justeras efter Patriks feedback.
@@ -49,6 +50,7 @@ Realism är inte ett mål.
 - Första passet för vapenkänsla är på plats: kraftigare träffrespons för rail och hagel, tydligare hagelspridning, rocket jump med sneda markskott och botar som väljer vapen efter avstånd.
 - Kartan använder nu utvalda texturer för golv, väggar, metall och innertak. Ljusa väggar och markerade passager ska fortsatt göra rummen lättlästa.
 - Färdiga lågpolyvapen ersätter de enkla lådmodellerna i spelarens händer och på kartans vapenplatser. Hagelgevär och railgun använder närliggande former ur paketet.
+- Förstapersonsvapnen ritas nu i en separat transparent vy (`scripts/viewmodel_overlay.gd`) så att större modeller syns framför väggar. Skottens mynning räknas fortfarande om till spelkamerans position.
 - Ammunitionsreglerna ingår ännu inte i det beslutade arbetet.
 
 ### Föreslagen plan för kartan och pickups (förslag från Claude, INTE beslutat av Patrik)
