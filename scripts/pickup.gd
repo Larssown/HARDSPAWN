@@ -24,9 +24,27 @@ func _ready() -> void:
 	bc.bottom_radius = 0.65
 	bc.height = 0.05
 	base.mesh = bc
-	base.material_override = _material(Color(0.18, 0.19, 0.19), 0.65)
-	base.position.y = 0.03
+	base.material_override = _material(Color(0.10, 0.12, 0.13), 0.65)
+	base.position.y = 0.06
 	add_child(base)
+	var rim := MeshInstance3D.new()
+	var rc := CylinderMesh.new()
+	rc.top_radius = 0.62
+	rc.bottom_radius = 0.62
+	rc.height = 0.025
+	rim.mesh = rc
+	rim.material_override = _material(col.darkened(0.18), 0.35)
+	rim.position.y = 0.105
+	add_child(rim)
+	var center := MeshInstance3D.new()
+	var cc := CylinderMesh.new()
+	cc.top_radius = 0.49
+	cc.bottom_radius = 0.49
+	cc.height = 0.03
+	center.mesh = cc
+	center.material_override = _material(Color(0.08, 0.10, 0.11), 0.62)
+	center.position.y = 0.13
+	add_child(center)
 	_item = Node3D.new()
 	_item.position.y = 0.9
 	add_child(_item)
