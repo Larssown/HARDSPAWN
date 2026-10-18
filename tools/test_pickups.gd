@@ -8,7 +8,8 @@ func _ready() -> void:
 func _run() -> void:
 	get_tree().current_scene = null
 	Game.match_cfg.bots = 0
-	if Game.host_game() != OK:
+	# Use a separate local port so the test can run while the normal game is open.
+	if Game.host_game(17777) != OK:
 		_fail("Could not start local host")
 		return
 	await get_tree().create_timer(1.0).timeout
@@ -20,6 +21,15 @@ func _run() -> void:
 		return
 	if arena.jump_pads.size() != 4 or world.pickups.size() < 12:
 		_fail("Missing pads or fixed pickups in the new arena")
+		return
+	var lava := arena.lava_pit
+	if lava == null or lava.kill_zone == null or lava.get_node_or_null("Embers") == null \
+			or lava.get_node_or_null("LavaLight") == null:
+		_fail("Central lava is missing its kill zone, embers or light")
+		return
+	var lava_surface := lava.get_node_or_null("Surface") as MeshInstance3D
+	if lava_surface == null or not (lava_surface.material_override is ShaderMaterial):
+		_fail("Central lava is missing its procedural shader")
 		return
 
 	var nav_map := world.get_world_3d().navigation_map
@@ -130,10 +140,23 @@ func _run() -> void:
 	player.teleport(Vector3(0, -2, 0), 0.0)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	if not player.dead:
-		_fail("KillZone did not trigger a death over the central void")
+	if player.dead:
+		_fail("Lava killed the player before surface contact")
 		return
-	print("PASS: three collidable levels, continuous ramps, safe spawns, voids, routes, pickups, ammo, jump pad and lethal fall")
+	player.teleport(Vector3(0, -3.9, 0), 0.0)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	if not player.dead:
+		_fail("LavaKillZone did not trigger a death at the lava surface")
+		return
+	player.respawn(Vector3(-24, 0.1, 13), 0.0)
+	player.teleport(Vector3(38, -5.0, 0), 0.0)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	if not player.dead:
+		_fail("Outer fall did not trigger the fallback KillZone")
+		return
+	print("PASS: three collidable levels, continuous ramps, safe spawns, routes, pickups, ammo, jump pad, lethal lava and outer fall")
 	get_tree().quit(0)
 
 

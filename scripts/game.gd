@@ -178,9 +178,9 @@ func _print_summary() -> void:
 
 # --- Hosting / joining --------------------------------------------------------
 
-func host_game() -> int:
+func host_game(port := PORT) -> int:
 	var peer := ENetMultiplayerPeer.new()
-	var err := peer.create_server(PORT, MAX_TOTAL - 1)
+	var err := peer.create_server(port, MAX_TOTAL - 1)
 	if err != OK:
 		return err
 	multiplayer.multiplayer_peer = peer

@@ -14,6 +14,7 @@ var pickup_defs: Array = []
 var jump_pads: Array[JumpPad] = []
 var waypoints: Array[Vector3] = []
 var nav_region: NavigationRegion3D
+var lava_pit: LavaPit
 
 var _floor: StandardMaterial3D
 var _wall: StandardMaterial3D
@@ -22,7 +23,6 @@ var _dark: StandardMaterial3D
 var _trim: StandardMaterial3D
 var _edge_dark: StandardMaterial3D
 var _edge_light: StandardMaterial3D
-var _void: StandardMaterial3D
 var _lamp: StandardMaterial3D
 
 
@@ -73,7 +73,6 @@ func _make_materials() -> void:
 	_trim = _material(Color(0.22, 0.23, 0.24), 0.0, 0.92)
 	_edge_dark = _material(Color(0.055, 0.06, 0.065), 0.0, 1.0)
 	_edge_light = _material(Color(0.90, 0.91, 0.92), 0.0, 0.9)
-	_void = _material(Color(0.025, 0.028, 0.035), 0.0, 1.0)
 	_lamp = _material(Color(0.92, 0.95, 1.0), 0.0, 0.4)
 	_lamp.emission_enabled = true
 	_lamp.emission = Color(0.90, 0.94, 1.0)
@@ -89,7 +88,9 @@ func _environment() -> void:
 	env.ambient_light_energy = 0.7
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.glow_enabled = true
-	env.glow_intensity = 0.08
+	env.glow_intensity = 0.65
+	env.glow_hdr_threshold = 1.2
+	env.glow_bloom = 0.18
 	var world := WorldEnvironment.new()
 	world.environment = env
 	add_child(world)
@@ -210,8 +211,6 @@ func _geometry() -> void:
 func _details() -> void:
 	# Dark outlines on ground; white outlines on raised paths. No floating lines.
 	for side in [-1.0, 1.0]:
-		_box(Vector3(side * 7.15, 0.012, 0), Vector3(0.14, 0.024, 13.9), _edge_dark, false)
-		_box(Vector3(0, 0.012, side * 7.15), Vector3(13.9, 0.024, 0.14), _edge_dark, false)
 		_box(Vector3(side * 29.65, 0.016, 0), Vector3(0.18, 0.03, 43), _edge_dark, false)
 		_box(Vector3(0, 0.016, side * 29.65), Vector3(45, 0.03, 0.18), _edge_dark, false)
 		_box(Vector3(side * 9.0, 5.03, 0), Vector3(0.12, 0.04, 21), _edge_light, false)
@@ -296,16 +295,18 @@ func _zone(at: Vector3, size: Vector3) -> void:
 
 
 func _hazards() -> void:
-	# The near-black shaft has a visible bottom but no collision floor.
-	_box(Vector3(0, -4.0, 0), Vector3(13.8, 0.2, 13.8), _void, false)
+	# The surface has no collision; only its Area3D kills on contact.
+	lava_pit = LavaPit.new()
+	lava_pit.name = "LavaPit"
+	add_child(lava_pit)
+	lava_pit.build()
 	for side in [-1.0, 1.0]:
 		_box(Vector3(side * 6.95, -2.0, 0), Vector3(0.10, 4.0, 13.8), _dark, false)
 		_box(Vector3(0, -2.0, side * 6.95), Vector3(13.8, 4.0, 0.10), _dark, false)
 		_box(Vector3(side * 6.87, -2.8, 0), Vector3(0.02, 0.22, 12.8), _edge_light, false)
 		_box(Vector3(0, -2.8, side * 6.87), Vector3(12.8, 0.22, 0.02), _edge_light, false)
-	_zone(Vector3(0, -6.1, 0), Vector3(12.8, 10.4, 12.8))
-	# The broad lower zone catches falls outside the platform perimeter.
-	_zone(Vector3(0, -10.5, 0), Vector3(160, 18, 160))
+	# A lower fallback catches falls outside the platform perimeter.
+	_zone(Vector3(0, -13.0, 0), Vector3(160, 17, 160))
 
 
 func _launch_solution(from: Vector3, to: Vector3, apex: float) -> Dictionary:
