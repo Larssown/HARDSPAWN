@@ -161,10 +161,33 @@ func _parse_cmdline() -> void:
 	if cmd.has("shot"):
 		get_tree().create_timer(float(cmd.get("shot_delay", "4"))).timeout.connect(func():
 			get_viewport().get_texture().get_image().save_png(cmd.shot))
+	if cmd.has("view"):
+		# Test camera: --view=x,y,z,tx,ty,tz  (fixed shot that ignores mouse/keyboard)
+		get_tree().create_timer(0.6).timeout.connect(_apply_debug_view.bind(str(cmd.view)))
 	if cmd.has("host"):
 		host_game.call_deferred()
 	elif cmd.has("join"):
 		join_game.call_deferred(cmd.join)
+
+
+func _apply_debug_view(spec: String) -> void:
+	if world == null:
+		return
+	var v := spec.split_floats(",")
+	if v.size() < 6:
+		return
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	ignore_mouse_until = Time.get_ticks_msec() + 3600000
+	var cam := Camera3D.new()
+	cam.name = "DebugView"
+	cam.fov = v[6] if v.size() > 6 else 60.0
+	world.add_child(cam)
+	cam.global_position = Vector3(v[0], v[1], v[2])
+	cam.look_at(Vector3(v[3], v[4], v[5]))
+	cam.make_current()
+	for n in world.find_children("*", "CanvasLayer", true, false):
+		if n is ViewmodelOverlay:
+			n.visible = false
 
 
 func _print_summary() -> void:

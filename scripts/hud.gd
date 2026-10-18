@@ -54,8 +54,8 @@ var _killer_name := ""
 func _ready() -> void:
 	layer = 10
 	var font := SystemFont.new()
-	font.font_names = PackedStringArray(["Futura", "Avenir Next", "Helvetica Neue"])
-	font.font_weight = 700
+	font.font_names = PackedStringArray(["SF Pro Display", "Helvetica Neue", "Avenir Next"])
+	font.font_weight = 500
 	root = Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -76,37 +76,45 @@ func _ready() -> void:
 	crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(crosshair)
 
-	# Bottom left: health & armor
-	var vitals := VBoxContainer.new()
-	_anchor(vitals, 0.0, 1.0, Vector2(36, -30), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_BEGIN)
+	# Bottom left: health (and armor) in rounded boxes, as in the concept image.
+	var vitals := HBoxContainer.new()
+	vitals.alignment = BoxContainer.ALIGNMENT_BEGIN
+	vitals.add_theme_constant_override("separation", 12)
+	_anchor(vitals, 0.0, 1.0, Vector2(28, -28), Control.GROW_DIRECTION_END, Control.GROW_DIRECTION_BEGIN)
 	root.add_child(vitals)
-	lbl_health = _label(vitals, "100", 64, Color.WHITE)
-	lbl_armor = _label(vitals, "ARMOR 0", 24, Color(1.0, 0.8, 0.2))
+	lbl_health = _label(_box(vitals), "100", 50, Color.WHITE)
+	lbl_armor = _label(_box(vitals, Color(1.0, 0.8, 0.35, 0.85)), "0", 30, Color(1.0, 0.82, 0.4))
 
 	# Bottom right: weapon
+	var wpanel := _box(root)
+	_anchor(wpanel, 1.0, 1.0, Vector2(-28, -28), Control.GROW_DIRECTION_BEGIN, Control.GROW_DIRECTION_BEGIN)
 	var wbox := VBoxContainer.new()
 	wbox.alignment = BoxContainer.ALIGNMENT_END
-	_anchor(wbox, 1.0, 1.0, Vector2(-36, -30), Control.GROW_DIRECTION_BEGIN, Control.GROW_DIRECTION_BEGIN)
-	root.add_child(wbox)
-	lbl_weapon = _label(wbox, "", 30, Color.WHITE)
+	wbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wpanel.add_child(wbox)
+	lbl_weapon = _label(wbox, "", 24, Color.WHITE)
 	lbl_weapon.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var slots := HBoxContainer.new()
 	slots.alignment = BoxContainer.ALIGNMENT_END
 	slots.add_theme_constant_override("separation", 14)
 	wbox.add_child(slots)
 	for i in Weapons.LIST.size():
-		weapon_slots.append(_label(slots, "%d %s" % [i + 1, Weapons.LIST[i].short], 20, Color.WHITE))
+		weapon_slots.append(_label(slots, "%d %s" % [i + 1, Weapons.LIST[i].short], 16, Color.WHITE))
 
 	# Top: timer, frags, rank
-	lbl_timer = _label(root, "10:00", 40, Color.WHITE)
+	var tpanel := _box(root)
+	_anchor(tpanel, 0.5, 0.0, Vector2(0, 20), Control.GROW_DIRECTION_BOTH, Control.GROW_DIRECTION_END)
+	lbl_timer = _label(tpanel, "10:00", 26, Color.WHITE)
 	lbl_timer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_anchor(lbl_timer, 0.5, 0.0, Vector2(0, 14), Control.GROW_DIRECTION_BOTH, Control.GROW_DIRECTION_END)
 	var fbox := VBoxContainer.new()
-	_anchor(fbox, 1.0, 0.0, Vector2(-36, 18), Control.GROW_DIRECTION_BEGIN, Control.GROW_DIRECTION_END)
+	fbox.alignment = BoxContainer.ALIGNMENT_END
+	_anchor(fbox, 1.0, 0.0, Vector2(-28, 20), Control.GROW_DIRECTION_BEGIN, Control.GROW_DIRECTION_END)
 	root.add_child(fbox)
-	lbl_frags = _label(fbox, "FRAGS 0", 34, Color.WHITE)
-	lbl_frags.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	lbl_rank = _label(fbox, "", 20, Color(0.7, 0.8, 1.0))
+	var fpanel := _box(fbox)
+	fpanel.size_flags_horizontal = Control.SIZE_SHRINK_END
+	lbl_frags = _label(fpanel, "0", 46, Color.WHITE)
+	lbl_frags.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl_rank = _label(fbox, "", 16, Color(0.8, 0.82, 0.86))
 	lbl_rank.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 	killfeed = VBoxContainer.new()
@@ -163,6 +171,25 @@ func _label(parent: Control, text: String, font_size: int, col: Color) -> Label:
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(l)
 	return l
+
+
+## Rounded outlined box like the concept HUD (white border, translucent black).
+func _box(parent: Control, border := Color(1, 1, 1, 0.85)) -> PanelContainer:
+	var panel := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0, 0, 0, 0.42)
+	sb.border_color = border
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(12)
+	sb.content_margin_left = 16
+	sb.content_margin_right = 16
+	sb.content_margin_top = 2
+	sb.content_margin_bottom = 7
+	sb.anti_aliasing = true
+	panel.add_theme_stylebox_override("panel", sb)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(panel)
+	return panel
 
 
 func _panel_style(border: Color) -> StyleBoxFlat:
@@ -362,8 +389,8 @@ func _process(delta: float) -> void:
 	elif hp <= 50:
 		hcol = Color(1.0, 0.65, 0.2)
 	lbl_health.add_theme_color_override("font_color", hcol)
-	lbl_armor.text = "ARMOR %d" % int(ceil(player.armor))
-	lbl_armor.visible = player.armor > 0.0
+	lbl_armor.text = str(int(ceil(player.armor)))
+	lbl_armor.get_parent().visible = player.armor > 0.0
 	var w: Dictionary = Weapons.LIST[player.weapon]
 	lbl_weapon.text = "%s  %d" % [w.name, player.ammo[player.weapon]]
 	lbl_weapon.add_theme_color_override("font_color", w.color)
@@ -375,7 +402,7 @@ func _process(delta: float) -> void:
 	lbl_speed.text = "%d ups" % int(ups)
 
 	if Game.players.has(player.peer_id):
-		lbl_frags.text = "FRAGS %d" % int(Game.players[player.peer_id].kills)
+		lbl_frags.text = str(int(Game.players[player.peer_id].kills))
 		var scores := Game.sorted_scores()
 		for i in scores.size():
 			if scores[i].id == player.peer_id:
