@@ -1,5 +1,10 @@
 # Holografiska händer som förstapersonsvapen
 
+**Nuvarande spelbeslut:** förstapersonsvapnen är helt dolda. Endast siktet
+visas i mitten av spelbilden. Bilderna nedan ligger kvar i projektet men ritas
+inte; `WeaponSprite.show_weapon()` håller spriten dold även efter vapenbyte och
+respawn.
+
 Patriks fyra filer hette `hand1.png` till `hand4.png`, men innehåller JPEG-data.
 De ligger därför i `assets/sprites/` med `.jpg` som filändelse:
 
@@ -10,9 +15,8 @@ De ligger därför i `assets/sprites/` med `.jpg` som filändelse:
 | `hand_rocket.jpg` (hand3) | Raketgevär |
 | `hand_rail.jpg` (hand4) | Railgun |
 
-Alla fyra visas i förstapersonsvyn. Modellerna som ligger på kartan och syns hos
-andra spelare ändras inte. Skottens skada, ammunition, eldhastighet och LAN-flöde
-är samma som tidigare.
+Modellerna som ligger på kartan och syns hos andra spelare ändras inte.
+Skottens skada, ammunition, eldhastighet och LAN-flöde är samma som tidigare.
 
 ## Nodstruktur
 

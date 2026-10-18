@@ -34,11 +34,11 @@ func _ready() -> void:
 
 
 func show_weapon(weapon_id: int) -> void:
-	visible = weapon_id >= 0 and weapon_id < HAND_IMAGES.size()
-	if visible:
+	# The player currently wants an unobstructed first-person view.
+	# Keep the mapping available without drawing any of the hand images.
+	visible = false
+	if weapon_id >= 0 and weapon_id < HAND_IMAGES.size():
 		texture = HAND_IMAGES[weapon_id]
-		_recoil = Vector2.ZERO
-		_switch = 1.0
 
 
 func add_look_delta(motion: Vector2) -> void:
