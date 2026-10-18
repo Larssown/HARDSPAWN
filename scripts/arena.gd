@@ -1,6 +1,6 @@
 class_name Arena
 extends Node3D
-## The Crucible: a compact three-level duel arena around an open furnace void.
+## The Crucible: a compact three-level duel arena around an open void.
 ## Every solid platform is a CSG primitive with collision. The two upper
 ## galleries are connected by walkable ramps; jump pads are faster shortcuts.
 
@@ -19,9 +19,10 @@ var _floor: StandardMaterial3D
 var _wall: StandardMaterial3D
 var _metal: StandardMaterial3D
 var _dark: StandardMaterial3D
-var _rust: StandardMaterial3D
-var _warning: StandardMaterial3D
-var _lava: StandardMaterial3D
+var _trim: StandardMaterial3D
+var _edge_dark: StandardMaterial3D
+var _edge_light: StandardMaterial3D
+var _void: StandardMaterial3D
 var _lamp: StandardMaterial3D
 
 
@@ -63,52 +64,32 @@ func _material(color: Color, metallic: float, roughness: float) -> StandardMater
 	return material
 
 
-func _surface(asset: String, tint: Color, metallic: float, roughness: float, tiling: float) -> StandardMaterial3D:
-	var material := _material(tint, metallic, roughness)
-	var folder := "res://assets/materials/%s/" % asset
-	material.albedo_texture = load(folder + "Color.jpg")
-	material.normal_enabled = true
-	material.normal_texture = load(folder + "NormalGL.jpg")
-	material.normal_scale = 0.5
-	material.uv1_triplanar = true
-	material.uv1_scale = Vector3.ONE * tiling
-	return material
-
-
 func _make_materials() -> void:
-	_floor = _surface("Concrete022", Color(0.72, 0.69, 0.64), 0.02, 0.9, 0.34)
-	_wall = _surface("PaintedBricks004", Color(0.70, 0.68, 0.63), 0.03, 0.9, 0.44)
-	_metal = _surface("MetalPlates013", Color(0.75, 0.74, 0.70), 0.22, 0.77, 0.48)
-	_dark = _surface("PaintedMetal012", Color(0.46, 0.46, 0.44), 0.20, 0.82, 0.46)
-	_rust = _material(Color(0.38, 0.23, 0.17), 0.16, 0.8)
-	_warning = _material(Color(0.92, 0.42, 0.12), 0.08, 0.68)
-	_lava = _material(Color(0.55, 0.13, 0.025), 0.0, 0.75)
-	_lava.emission_enabled = true
-	_lava.emission = Color(1.0, 0.24, 0.035)
-	_lava.emission_energy_multiplier = 2.1
-	_lamp = _material(Color(1.0, 0.73, 0.40), 0.0, 0.4)
+	# Flat values make floors, raised routes and cover readable at a glance.
+	_floor = _material(Color(0.65, 0.66, 0.67), 0.0, 0.92)
+	_wall = _material(Color(0.76, 0.77, 0.78), 0.0, 0.88)
+	_metal = _material(Color(0.37, 0.38, 0.40), 0.02, 0.9)
+	_dark = _material(Color(0.10, 0.11, 0.12), 0.0, 0.96)
+	_trim = _material(Color(0.22, 0.23, 0.24), 0.0, 0.92)
+	_edge_dark = _material(Color(0.055, 0.06, 0.065), 0.0, 1.0)
+	_edge_light = _material(Color(0.90, 0.91, 0.92), 0.0, 0.9)
+	_void = _material(Color(0.025, 0.028, 0.035), 0.0, 1.0)
+	_lamp = _material(Color(0.92, 0.95, 1.0), 0.0, 0.4)
 	_lamp.emission_enabled = true
-	_lamp.emission = Color(1.0, 0.65, 0.25)
-	_lamp.emission_energy_multiplier = 1.8
+	_lamp.emission = Color(0.90, 0.94, 1.0)
+	_lamp.emission_energy_multiplier = 1.1
 
 
 func _environment() -> void:
-	var sky_material := ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color(0.09, 0.12, 0.16)
-	sky_material.sky_horizon_color = Color(0.49, 0.29, 0.20)
-	sky_material.ground_horizon_color = Color(0.30, 0.16, 0.13)
-	sky_material.ground_bottom_color = Color(0.10, 0.07, 0.08)
-	var sky := Sky.new()
-	sky.sky_material = sky_material
 	var env := Environment.new()
-	env.background_mode = Environment.BG_SKY
-	env.sky = sky
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0.12, 0.13, 0.14)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.66, 0.64, 0.60)
-	env.ambient_light_energy = 1.15
+	env.ambient_light_color = Color(0.82, 0.83, 0.85)
+	env.ambient_light_energy = 0.7
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.glow_enabled = true
-	env.glow_intensity = 0.18
+	env.glow_intensity = 0.08
 	var world := WorldEnvironment.new()
 	world.environment = env
 	add_child(world)
@@ -174,7 +155,7 @@ func _ramp(low: Vector3, high: Vector3, width: float) -> void:
 	var ramp := _box(center, Vector3(width, thickness, length), _metal)
 	ramp.basis = basis
 	for side in [-1.0, 1.0]:
-		var rail := _box(Vector3.ZERO, Vector3(0.12, 0.12, length), _rust, false)
+		var rail := _box(Vector3.ZERO, Vector3(0.12, 0.12, length), _edge_light, false)
 		rail.transform = ramp.transform * Transform3D(Basis.IDENTITY,
 			Vector3(side * (width * 0.5 - 0.12), thickness * 0.5 + 0.06, 0))
 
@@ -223,42 +204,48 @@ func _geometry() -> void:
 			Vector3(-4, 1.0, -23), Vector3(4, 1.0, 23),
 			Vector3(-23, 1.0, -15), Vector3(23, 1.0, 15)]:
 		_box(at, Vector3(2.7, 2.0, 2.7), _dark)
-		_box(at + Vector3(0, 1.04, 0), Vector3(2.95, 0.09, 2.95), _rust, false)
+		_box(at + Vector3(0, 1.04, 0), Vector3(2.95, 0.09, 2.95), _edge_light, false)
 
 
 func _details() -> void:
-	# Thin hazard stripes mark every walkable edge without preventing falls.
+	# Dark outlines on ground; white outlines on raised paths. No floating lines.
 	for side in [-1.0, 1.0]:
-		_box(Vector3(side * 7.15, 0.012, 0), Vector3(0.14, 0.024, 13.9), _warning, false)
-		_box(Vector3(0, 0.012, side * 7.15), Vector3(13.9, 0.024, 0.14), _warning, false)
-		_box(Vector3(side * 29.65, 0.016, 0), Vector3(0.18, 0.03, 43), _warning, false)
-		_box(Vector3(0, 0.016, side * 29.65), Vector3(45, 0.03, 0.18), _warning, false)
-		_box(Vector3(side * 9.0, 5.03, 0), Vector3(0.12, 0.04, 21), _warning, false)
-		_box(Vector3(0, 5.03, side * 9.0), Vector3(27, 0.04, 0.12), _warning, false)
-		_box(Vector3(side * 1.38, 5.03, 0), Vector3(0.08, 0.04, 13.0), _warning, false)
+		_box(Vector3(side * 7.15, 0.012, 0), Vector3(0.14, 0.024, 13.9), _edge_dark, false)
+		_box(Vector3(0, 0.012, side * 7.15), Vector3(13.9, 0.024, 0.14), _edge_dark, false)
+		_box(Vector3(side * 29.65, 0.016, 0), Vector3(0.18, 0.03, 43), _edge_dark, false)
+		_box(Vector3(0, 0.016, side * 29.65), Vector3(45, 0.03, 0.18), _edge_dark, false)
+		_box(Vector3(side * 9.0, 5.03, 0), Vector3(0.12, 0.04, 21), _edge_light, false)
+		_box(Vector3(0, 5.03, side * 9.0), Vector3(27, 0.04, 0.12), _edge_light, false)
+		_box(Vector3(0, 5.03, side * 1.28), Vector3(21.0, 0.04, 0.10), _edge_light, false)
+		# The four short wings also end over the void; outline their exposed tips.
+		_box(Vector3(0, 0.018, side * 34.28), Vector3(13.5, 0.035, 0.14), _edge_light, false)
+		_box(Vector3(side * 34.28, 0.018, 0), Vector3(0.14, 0.035, 13.5), _edge_light, false)
+		for tower in [Vector3(-17, 0, -18), Vector3(17, 0, 18)]:
+			_box(tower + Vector3(side * 5.08, 10.03, 0), Vector3(0.10, 0.04, 8.1), _edge_light, false)
+			_box(tower + Vector3(0, 10.03, side * 4.08), Vector3(10.1, 0.04, 0.10), _edge_light, false)
 	# Underside girders expose the bridge structure from ground level.
 	for z in [-11.0, 0.0, 11.0]:
-		_box(Vector3(0, 4.15, z), Vector3(24, 0.22, 0.28), _rust, false)
+		_box(Vector3(0, 4.15, z), Vector3(24, 0.22, 0.28), _trim, false)
 	for x in [-11.0, 11.0]:
-		_box(Vector3(x, 4.15, 0), Vector3(0.28, 0.22, 20), _rust, false)
+		_box(Vector3(x, 4.15, 0), Vector3(0.28, 0.22, 20), _trim, false)
 	# Tower crowns and vertical ribs create a recognizable skyline.
 	for tower in [Vector3(-21, 0, -21), Vector3(21, 0, 21)]:
-		_cylinder(tower + Vector3(0, 9.5, 0), 2.45, 0.45, _rust, false)
+		_cylinder(tower + Vector3(0, 9.5, 0), 2.45, 0.45, _trim, false)
 		_cylinder(tower + Vector3(0, 12.2, 0), 1.25, 5.0, _dark, false)
-		_cylinder(tower + Vector3(0, 15.2, 0), 1.55, 0.55, _rust, false)
+		_cylinder(tower + Vector3(0, 15.2, 0), 1.55, 0.55, _trim, false)
 		_cylinder(tower + Vector3(0, 17.0, 0), 0.45, 3.2, _dark, false)
 		_cylinder(tower + Vector3(0, 18.7, 0), 0.57, 0.18, _lamp, false)
 	# Arches mark the exposed center crossing and break up long sightlines.
 	for x in [-11.0, 11.0]:
 		for z in [-2.55, 2.55]:
-			_box(Vector3(x, 7.0, z), Vector3(0.35, 4.0, 0.35), _rust, false)
-		_box(Vector3(x, 9.0, 0), Vector3(0.46, 0.32, 5.5), _metal, false)
+			_box(Vector3(x, 7.0, z), Vector3(0.35, 4.0, 0.35), _trim, true)
+		_box(Vector3(x, 9.0, 0), Vector3(0.46, 0.32, 5.5), _metal, true)
 	# Recessed strips make the gallery underside readable from ground level.
 	for x in [-8.0, 0.0, 8.0]:
 		for z in [-11.0, 11.0]:
 			_box(Vector3(x, 4.24, z), Vector3(2.4, 0.05, 0.24), _lamp, false)
 	for z in [-25.0, 25.0]:
-		_box(Vector3(0, 0.018, z), Vector3(7.0, 0.035, 0.12), _warning, false)
+		_box(Vector3(0, 0.018, z), Vector3(7.0, 0.035, 0.12), _edge_dark, false)
 
 
 func _navigation_links() -> void:
@@ -281,8 +268,8 @@ func _link(from: Vector3, to: Vector3) -> void:
 func _lighting() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, -34, 0)
-	sun.light_color = Color(1.0, 0.74, 0.52)
-	sun.light_energy = 0.9
+	sun.light_color = Color(0.96, 0.97, 1.0)
+	sun.light_energy = 0.85
 	sun.shadow_enabled = true
 	add_child(sun)
 	for at in [Vector3(-17, 8.7, -18), Vector3(17, 8.7, 18),
@@ -291,16 +278,10 @@ func _lighting() -> void:
 		_box(at, Vector3(1.9, 0.08, 0.38), _lamp, false)
 		var light := OmniLight3D.new()
 		light.position = at - Vector3(0, 0.35, 0)
-		light.light_color = Color(1.0, 0.64, 0.37)
+		light.light_color = Color(0.90, 0.93, 1.0)
 		light.light_energy = 1.1
 		light.omni_range = 8.0
 		add_child(light)
-	var furnace := OmniLight3D.new()
-	furnace.position = Vector3(0, -4.4, 0)
-	furnace.light_color = Color(1.0, 0.24, 0.05)
-	furnace.light_energy = 2.3
-	furnace.omni_range = 16.0
-	add_child(furnace)
 
 
 func _zone(at: Vector3, size: Vector3) -> void:
@@ -315,15 +296,13 @@ func _zone(at: Vector3, size: Vector3) -> void:
 
 
 func _hazards() -> void:
-	# A visible furnace sits below the bridge; neither it nor the void has a floor.
-	_box(Vector3(0, -4.0, 0), Vector3(13.8, 0.2, 13.8), _lava, false)
+	# The near-black shaft has a visible bottom but no collision floor.
+	_box(Vector3(0, -4.0, 0), Vector3(13.8, 0.2, 13.8), _void, false)
 	for side in [-1.0, 1.0]:
 		_box(Vector3(side * 6.95, -2.0, 0), Vector3(0.10, 4.0, 13.8), _dark, false)
 		_box(Vector3(0, -2.0, side * 6.95), Vector3(13.8, 4.0, 0.10), _dark, false)
-		_box(Vector3(side * 6.87, -2.8, 0), Vector3(0.02, 0.22, 12.8), _lamp, false)
-		_box(Vector3(0, -2.8, side * 6.87), Vector3(12.8, 0.22, 0.02), _lamp, false)
-	for offset in [-4.5, -1.5, 1.5, 4.5]:
-		_box(Vector3(offset, -3.87, 0), Vector3(0.22, 0.025, 12.8), _warning, false)
+		_box(Vector3(side * 6.87, -2.8, 0), Vector3(0.02, 0.22, 12.8), _edge_light, false)
+		_box(Vector3(0, -2.8, side * 6.87), Vector3(12.8, 0.22, 0.02), _edge_light, false)
 	_zone(Vector3(0, -6.1, 0), Vector3(12.8, 10.4, 12.8))
 	# The broad lower zone catches falls outside the platform perimeter.
 	_zone(Vector3(0, -10.5, 0), Vector3(160, 18, 160))
@@ -353,8 +332,8 @@ func _add_pad(pos: Vector3, target: Vector3, apex: float) -> void:
 	var collider := CollisionShape3D.new()
 	collider.shape = shape
 	pad.add_child(collider)
-	_cylinder(pos + Vector3(0, 0.08, 0), 1.25, 0.16, _rust, false)
-	_cylinder(pos + Vector3(0, 0.17, 0), 0.93, 0.04, _warning, false)
+	_cylinder(pos + Vector3(0, 0.08, 0), 1.25, 0.16, _trim, false)
+	_cylinder(pos + Vector3(0, 0.17, 0), 0.93, 0.04, _edge_light, false)
 	_box(pos + Vector3(0, 0.205, 0), Vector3(0.18, 0.03, 1.25), _lamp, false)
 	jump_pads.append(pad)
 

@@ -44,6 +44,11 @@ func _run() -> void:
 		if not world.get_world_3d().direct_space_state.intersect_shape(body_check).is_empty():
 			_fail("Spawn intersects solid geometry: %s" % spawn_pos)
 			return
+		var support := PhysicsRayQueryParameters3D.create(spawn_pos + Vector3(0, 1.0, 0),
+			spawn_pos - Vector3(0, 1.0, 0), 1)
+		if world.get_world_3d().direct_space_state.intersect_ray(support).is_empty():
+			_fail("Spawn has no solid floor: %s" % spawn_pos)
+			return
 
 	for surface in [Vector3(-24, 0, 13), Vector3(0, 5, 0), Vector3(-17, 10, -18)]:
 		var query := PhysicsRayQueryParameters3D.create(surface + Vector3(0, 1, 0),
@@ -56,6 +61,23 @@ func _run() -> void:
 		if not world.get_world_3d().direct_space_state.intersect_ray(query).is_empty():
 			_fail("The void has an invisible floor at %s" % void_pos)
 			return
+
+	# Confirm the four ramps have collision all the way between levels, not
+	# only a navigable link at each end.
+	for endpoints in [
+		[Vector3(-11.5, 0, -25), Vector3(-11.5, 5, -11)],
+		[Vector3(11.5, 0, 25), Vector3(11.5, 5, 11)],
+		[Vector3(-11.5, 5, -11), Vector3(-17, 10, -18)],
+		[Vector3(11.5, 5, 11), Vector3(17, 10, 18)],
+	]:
+		for fraction in [0.2, 0.5, 0.8]:
+			var expected: Vector3 = endpoints[0].lerp(endpoints[1], fraction)
+			var ray := PhysicsRayQueryParameters3D.create(expected + Vector3(0, 1, 0),
+				expected - Vector3(0, 1.5, 0), 1)
+			var hit := world.get_world_3d().direct_space_state.intersect_ray(ray)
+			if hit.is_empty() or absf(hit.position.y - expected.y) > 0.45:
+				_fail("Ramp has a missing or misplaced surface at %s" % expected)
+				return
 
 	player.select_weapon(Weapons.RAIL)
 	if player.weapon != Weapons.MG:
@@ -111,7 +133,7 @@ func _run() -> void:
 	if not player.dead:
 		_fail("KillZone did not trigger a death over the central void")
 		return
-	print("PASS: three collidable levels, voids, routes, pickups, ammo, jump pad and lethal fall")
+	print("PASS: three collidable levels, continuous ramps, safe spawns, voids, routes, pickups, ammo, jump pad and lethal fall")
 	get_tree().quit(0)
 
 

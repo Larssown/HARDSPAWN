@@ -46,15 +46,16 @@ Realism är inte ett mål.
 | 2026-10-17 | Patrik vill satsa fullt på spelets grafik. Den industriella stilen och banans läsbarhet ska styra arbetet, med fortsatt hänsyn till målet om ett lättdrivet spel. |
 | 2026-10-18 | Den slutna prototypbanan ersätts av en egen öppen, kompakt arena i tre nivåer för snabba 1v1- och 2v2-strider. Den tar inspiration från Q3DM17:s vertikalitet och Facing Worlds utsatta höjder utan att kopiera deras layout. Markväg runt en avgrund, övre gångar, två torn, railgun på högsta nivån och Mega Health på en exponerad bro. |
 | 2026-10-18 | Hoppplattor ska vara Area3D med inställbar höjd och riktning. Lava/avgrund ska ge omedelbar död och åskådarläge under respawntiden. Maskingevärsammo ligger på marknivån; vapnen får begränsad ammunition. Slutlig ammunitionsbalans kan finjusteras. |
+| 2026-10-18 | Patrik vill behålla den tredelade arenan men göra den ren, lättöverskådlig och så nära svartvitt som möjligt. Kartan använder därför släta gråskalefärger utan nedladdade texturer; ljusa golv, mörkare höjdvägar och kontrastmarkerade farliga kanter. Färg på pickups och vapen behålls för att de ska synas snabbt. Detta ersätter det tidigare beslutet om rostig, varm industrigrafik för den aktuella arenan. |
 
 ## 4. Pågående
 - Den öppna tredelade banan **The Crucible** byggs av CSG-former med kollision: markperimeter, övre ring och bro, två tornplattformar, gångbara ramper, hoppplattor och dödliga fall. Layouten ska speltestas och justeras efter Patriks feedback.
 - Vapenpickups på fasta platser finns på kartan. Alla andra items behåller fasta platser.
 - Första passet för vapenkänsla är på plats: kraftigare träffrespons för rail och hagel, tydligare hagelspridning, rocket jump med sneda markskott och botar som väljer vapen efter avstånd.
-- Kartan använder nu utvalda texturer för golv, väggar, metall och innertak. Ljusa väggar och markerade passager ska fortsatt göra rummen lättlästa.
+- Arenan använder släta gråskalefärger och neutral belysning. Marknivå, höjdgångar och farliga kanter har skilda ljushetsvärden. Texturpaketen finns kvar men används inte på denna bana.
 - Färdiga lågpolyvapen ersätter de enkla lådmodellerna i spelarens händer och på kartans vapenplatser. Hagelgevär och railgun använder närliggande former ur paketet.
 - Förstapersonsvapnen ritas nu i en separat transparent vy (`scripts/viewmodel_overlay.gd`) så att större modeller syns framför väggar. Skottens mynning räknas fortfarande om till spelkamerans position.
-- Den nya banan behåller rostig metall, betong, varma armaturer och tydliga varningsmarkeringar kring stupen. Föregående rumsbana finns kvar i git-historiken.
+- Mittbrons kantmarkeringar följer nu själva bron; ramper och spawnplatser kontrolleras mot fysisk kollision. Synliga stolpar vid mittbron har också kollision. Föregående rumsbana finns kvar i git-historiken.
 - Maskingeväret startar med 120 skott. Fasta ammolådor på marknivån ger 60 skott, andra vapen får ammunition vid pickup och alla vapen har en maxgräns. Mängder och respawntider är första spelbara balansen.
 
 ### Föreslagen plan för kartan och pickups (förslag från Claude, INTE beslutat av Patrik)

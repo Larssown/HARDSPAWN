@@ -25,7 +25,7 @@ De två markramperna går från `(-11.5,0,-25)` till `(-11.5,5,-11)` och från
 `(-17,10,-18)` respektive `(17,10,18)`. Ramperna är gångbara; hoppplattorna
 är snabbare alternativ. `NavigationLink3D` kopplar rampändarna för botarna.
 
-Fyrkantens mitt saknar golv. En synlig lavayta ligger på Y = -4 utan kollision.
+Fyrkantens mitt saknar golv. En mörk bottenyta ligger på Y = -4 utan kollision.
 En `KillZone` täcker fallet i mitten och en större zon fångar fall vid ytterkanten.
 Mega Health finns på mittbron `(0,5,0)`, armor på södra gången `(0,5,11)` och
 railgun på norra tornet `(-17,10,-18)`.
@@ -35,3 +35,11 @@ höjd och horisontell fart från sitt mål i `arena.gd`. Fallzonerna använder
 `scripts/kill_zone.gd`, som låter värden besluta om död och startar spelets
 vanliga poäng- och respawnflöde. Den döde spelaren får åskådarkamera tills
 respawn.
+
+## Visuell läsbarhet
+
+Banan använder släta material i vitt, svart och grått i stället för texturpaket.
+Ljus marknivå skiljer sig från mörkare höjdgångar och nästan svart avgrund.
+Mörka linjer markerar stup på marknivå; vita linjer följer kanterna på broar,
+gångar, torn och yttervingar. Pickupföremålens färger är kvar som spelinformation.
+Ljuset är neutralt och bakgrunden mörk, så banans silhuett syns tydligt.
