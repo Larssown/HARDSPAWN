@@ -1,0 +1,48 @@
+class_name MegastructureBackdrop
+extends Node3D
+## Deterministic, decorative silhouettes outside the playable arena.
+## BoxMesh instances have no collision and cast no shadows on the match.
+
+@export_range(20, 40, 1) var tower_count := 32
+@export var inner_radius := 80.0
+@export var outer_radius := 350.0
+@export var width_range := Vector2(15.0, 50.0)
+@export var depth_range := Vector2(15.0, 50.0)
+@export var height_range := Vector2(80.0, 300.0)
+@export var layout_seed := 4719
+
+
+func _ready() -> void:
+	generate()
+
+
+func generate() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = layout_seed
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color(0.14, 0.145, 0.155)
+	material.roughness = 1.0
+
+	for i in tower_count:
+		# One tower per angular sector keeps the silhouette around the whole map.
+		var angle := TAU * (float(i) + rng.randf_range(-0.36, 0.36)) / float(tower_count)
+		var radius := rng.randf_range(inner_radius, outer_radius)
+		var height := rng.randf_range(height_range.x, height_range.y)
+		var size := Vector3(
+			rng.randf_range(width_range.x, width_range.y),
+			height,
+			rng.randf_range(depth_range.x, depth_range.y)
+		)
+		var base_y := -rng.randf_range(32.0, 58.0) + rng.randf_range(-8.0, 8.0)
+		var tower := MeshInstance3D.new()
+		tower.name = "Monolith%02d" % i
+		var box := BoxMesh.new()
+		box.size = size
+		tower.mesh = box
+		tower.material_override = material
+		tower.position = Vector3(cos(angle) * radius, base_y + height * 0.5,
+			sin(angle) * radius)
+		tower.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		tower.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+		add_child(tower)

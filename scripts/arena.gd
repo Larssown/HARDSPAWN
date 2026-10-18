@@ -116,9 +116,14 @@ func _environment() -> void:
 	env.ssao_intensity = 2.2
 	env.ssao_power = 1.6
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.0, 0.0, 0.0)
-	env.fog_density = 0.008
+	env.fog_mode = Environment.FOG_MODE_DEPTH
+	env.fog_light_color = Color(0.006, 0.007, 0.009)
+	env.fog_density = 0.98
+	env.fog_depth_begin = 95.0
+	env.fog_depth_end = 340.0
+	env.fog_depth_curve = 1.4
 	env.fog_sky_affect = 0.0
+	env.volumetric_fog_enabled = false
 	var world := WorldEnvironment.new()
 	world.environment = env
 	add_child(world)
@@ -369,16 +374,11 @@ func _boxmesh(size: Vector3) -> BoxMesh:
 	return b
 
 
-## Large silhouettes standing in the black void around the arena.
+## No-collision towers beyond the playable arena; built by a reusable generator.
 func _backdrop() -> void:
-	for spec in [
-		[Vector3(0, 6, -44), Vector3(4, 34, 4)], [Vector3(-9, 2, -42), Vector3(6, 22, 6)],
-		[Vector3(10, 0, -45), Vector3(5, 16, 7)], [Vector3(44, 4, 6), Vector3(5, 28, 5)],
-		[Vector3(-44, 3, -8), Vector3(6, 24, 6)], [Vector3(-8, 1, 45), Vector3(7, 18, 5)],
-		[Vector3(9, 5, 43), Vector3(4, 30, 4)], [Vector3(38, -2, -36), Vector3(8, 14, 8)],
-		[Vector3(-38, -2, 36), Vector3(8, 14, 8)],
-	]:
-		_box(spec[0], spec[1], _block, false)
+	var backdrop := MegastructureBackdrop.new()
+	backdrop.name = "MegastructureBackdrop"
+	add_child(backdrop)
 
 
 func _navigation_links() -> void:
