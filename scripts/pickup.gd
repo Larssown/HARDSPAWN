@@ -3,7 +3,7 @@ extends Node3D
 ## A fixed-location item. Weapon pickups share the player's imported models.
 
 const COLORS := {"health": Color(0.35, 0.8, 0.42), "mega": Color(0.4, 0.65, 0.9),
-	"armor": Color(0.92, 0.68, 0.28)}
+	"armor": Color(0.92, 0.68, 0.28), "ammo": Color(1.0, 0.78, 0.32)}
 
 var kind := "health"
 var weapon_id := Weapons.SHOTGUN
@@ -61,6 +61,19 @@ func _ready() -> void:
 		"armor":
 			_mesh(_box(Vector3(0.55, 0.6, 0.14)), mat)
 			_mesh(_box(Vector3(0.62, 0.12, 0.18)), _material(Color(0.9, 0.9, 0.86), 0.55))
+		"ammo":
+			_mesh(_box(Vector3(0.65, 0.36, 0.46)), _material(Color(0.15, 0.17, 0.17), 0.65))
+			_mesh(_box(Vector3(0.55, 0.07, 0.48)), mat)
+			for x in [-0.19, 0.0, 0.19]:
+				var round_mesh := CylinderMesh.new()
+				round_mesh.top_radius = 0.065
+				round_mesh.bottom_radius = 0.065
+				round_mesh.height = 0.35
+				var round_visual := MeshInstance3D.new()
+				round_visual.mesh = round_mesh
+				round_visual.material_override = mat
+				round_visual.position = Vector3(x, 0.28, 0)
+				_item.add_child(round_visual)
 		"weapon":
 			var visual := WeaponVisual.create(weapon_id)
 			visual.scale = Vector3.ONE * 0.55

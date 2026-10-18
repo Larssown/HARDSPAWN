@@ -30,6 +30,7 @@ var spawn_count := 0
 var weapon := Weapons.MG
 var last_weapon := Weapons.MG
 var owned_weapons := 1 << Weapons.MG
+var ammo := PackedInt32Array(Weapons.START_AMMO)
 var cooldown := 0.0
 var zooming := false
 
@@ -247,6 +248,7 @@ func grant_weapon(i: int) -> void:
 	if i < 0 or i >= Weapons.LIST.size() or has_weapon(i):
 		return
 	owned_weapons |= 1 << i
+	add_ammo(i, Weapons.WEAPON_PICKUP_AMMO[i])
 	last_weapon = weapon
 	weapon = i
 	cooldown = maxf(cooldown, 0.15)
@@ -255,9 +257,17 @@ func grant_weapon(i: int) -> void:
 		viewmodel.show_weapon(i)
 
 
-func set_loadout(mask: int, active_weapon: int) -> void:
+func add_ammo(i: int, amount: int) -> void:
+	if i < 0 or i >= ammo.size():
+		return
+	ammo[i] = mini(ammo[i] + amount, Weapons.AMMO_CAPACITY[i])
+
+
+func set_loadout(mask: int, active_weapon: int, remaining := PackedInt32Array()) -> void:
 	owned_weapons = mask | (1 << Weapons.MG)
 	weapon = active_weapon if has_weapon(active_weapon) else Weapons.MG
+	if remaining.size() == Weapons.LIST.size():
+		ammo = remaining.duplicate()
 	last_weapon = Weapons.MG
 	_update_gun_color()
 	if viewmodel:
@@ -286,7 +296,7 @@ func _physics_process(delta: float) -> void:
 			_move(delta)
 			_weapons(delta)
 		for t in Game.targets():
-			_net_state.rpc_id(t, global_position, velocity, yaw, pitch, weapon, spawn_count)
+			_net_state.rpc_id(t, global_position, velocity, yaw, pitch, weapon, ammo, spawn_count)
 	else:
 		var k := 1.0 - exp(-18.0 * delta)
 		global_position = global_position.lerp(_net_pos, k)
@@ -325,15 +335,8 @@ func _move(delta: float) -> void:
 	_was_on_floor = on_floor
 
 	_pad_cooldown -= delta
-	if _pad_cooldown <= 0.0:
-		for pad in Game.world.arena.jump_pads:
-			var pp: Vector3 = pad.pos
-			if absf(global_position.y - pp.y) < 0.7 and Vector2(global_position.x - pp.x, global_position.z - pp.z).length() < 1.25:
-				launch(pad.vel)
-				break
-
-	if global_position.y < -30.0:
-		_deal(peer_id, 999.0)
+	if global_position.y < -30.0 and multiplayer.is_server():
+		Game.server_damage(peer_id, peer_id, 10000.0, -1)
 
 
 func _apply_friction(delta: float) -> void:
@@ -368,6 +371,10 @@ func _air_accelerate(dir: Vector3, wish_speed: float, delta: float) -> void:
 	velocity += dir * minf(AIR_ACCEL * wish_speed * delta, add)
 
 
+func can_use_jump_pad() -> bool:
+	return _pad_cooldown <= 0.0 and not dead
+
+
 func launch(vel: Vector3) -> void:
 	velocity = vel
 	_air_lock = 0.3
@@ -394,6 +401,12 @@ func _weapons(delta: float) -> void:
 
 func _fire() -> void:
 	var w: Dictionary = Weapons.LIST[weapon]
+	if ammo[weapon] <= 0:
+		cooldown = 0.25
+		if weapon != Weapons.MG and ammo[Weapons.MG] > 0:
+			select_weapon(Weapons.MG)
+		return
+	ammo[weapon] -= 1
 	cooldown = w.cooldown
 	var origin := head.global_position
 	var aim := -head.global_basis.z
@@ -458,7 +471,8 @@ func flash_muzzle() -> void:
 # --- Networking -------------------------------------------------------------------
 
 @rpc("authority", "call_remote", "unreliable_ordered")
-func _net_state(pos: Vector3, vel: Vector3, y: float, p: float, w: int, sc: int) -> void:
+func _net_state(pos: Vector3, vel: Vector3, y: float, p: float, w: int,
+		remaining: PackedInt32Array, sc: int) -> void:
 	if sc != spawn_count:
 		return
 	if pos.distance_to(global_position) > 10.0:
@@ -467,6 +481,7 @@ func _net_state(pos: Vector3, vel: Vector3, y: float, p: float, w: int, sc: int)
 	velocity = vel
 	_net_yaw = y
 	_net_pitch = p
+	ammo = remaining.duplicate()
 	if w != weapon:
 		weapon = w
 		_update_gun_color()
@@ -506,6 +521,7 @@ func respawn(pos: Vector3, new_yaw: float) -> void:
 	health = 100.0
 	armor = 0.0
 	owned_weapons = 1 << Weapons.MG
+	ammo = PackedInt32Array(Weapons.START_AMMO)
 	weapon = Weapons.MG
 	last_weapon = Weapons.MG
 	_update_gun_color()
@@ -541,8 +557,21 @@ func _process(delta: float) -> void:
 
 func _update_camera(delta: float) -> void:
 	if dead:
-		camera.position = camera.position.lerp(Vector3(0, -1.25, 0), minf(delta * 4.0, 1.0))
-		camera.rotation.z = lerpf(camera.rotation.z, 0.5, minf(delta * 3.0, 1.0))
+		var watched: Player = null
+		if Game.world:
+			for other in Game.world.players_root.get_children():
+				var candidate := other as Player
+				if candidate != null and candidate != self and not candidate.dead:
+					watched = candidate
+					break
+		if watched:
+			var look_at_point := watched.global_position + Vector3(0, 1.4, 0)
+			var viewpoint := look_at_point + watched.global_basis.z * 4.0 + Vector3(0, 2.1, 0)
+			camera.global_position = camera.global_position.lerp(viewpoint, minf(delta * 7.0, 1.0))
+			camera.look_at(look_at_point, Vector3.UP)
+		else:
+			camera.global_position = camera.global_position.lerp(Vector3(0, 15, 20), minf(delta * 4.0, 1.0))
+			camera.look_at(Vector3.ZERO, Vector3.UP)
 		return
 	var hspeed := Vector2(velocity.x, velocity.z).length()
 	var bob := 0.0

@@ -294,10 +294,10 @@ func _on_hit(dmg: float) -> void:
 func _on_kill(victim_id: int, killer_id: int, weapon: int) -> void:
 	var vname: String = Game.players[victim_id].name if Game.players.has(victim_id) else "?"
 	var kname: String = Game.players[killer_id].name if Game.players.has(killer_id) else vname
-	var w: String = Weapons.LIST[weapon].short
+	var w: String = Weapons.LIST[weapon].short if weapon >= 0 and weapon < Weapons.LIST.size() else "VOID"
 	var entry := _label(killfeed, "", 20, Color.WHITE)
 	if killer_id == victim_id:
-		entry.text = "%s blew up" % vname
+		entry.text = "%s fell into the void" % vname if weapon < 0 else "%s blew up" % vname
 	else:
 		entry.text = "%s  [%s]  %s" % [kname, w, vname]
 	get_tree().create_timer(5.0).timeout.connect(entry.queue_free)
@@ -309,7 +309,7 @@ func _on_kill(victim_id: int, killer_id: int, weapon: int) -> void:
 		Sfx.play_2d("kill", -2.0)
 		_show_center("YOU FRAGGED %s" % vname.to_upper(), Color(1.0, 0.85, 0.3))
 	if victim_id == player.peer_id:
-		_killer_name = "YOU BLEW YOURSELF UP" if killer_id == victim_id else "FRAGGED BY %s" % kname.to_upper()
+		_killer_name = ("FELL INTO THE VOID" if weapon < 0 else "YOU BLEW YOURSELF UP") if killer_id == victim_id else "FRAGGED BY %s" % kname.to_upper()
 
 
 func _on_match_ended() -> void:
@@ -365,7 +365,7 @@ func _process(delta: float) -> void:
 	lbl_armor.text = "ARMOR %d" % int(ceil(player.armor))
 	lbl_armor.visible = player.armor > 0.0
 	var w: Dictionary = Weapons.LIST[player.weapon]
-	lbl_weapon.text = w.name
+	lbl_weapon.text = "%s  %d" % [w.name, player.ammo[player.weapon]]
 	lbl_weapon.add_theme_color_override("font_color", w.color)
 	for i in weapon_slots.size():
 		var alpha := 1.0 if i == player.weapon else (0.6 if player.has_weapon(i) else 0.18)
@@ -383,7 +383,7 @@ func _process(delta: float) -> void:
 				break
 
 	crosshair.visible = not player.dead
-	lbl_sub.text = (_killer_name + "\nRespawning...") if player.dead else ""
+	lbl_sub.text = (_killer_name + "\nSPECTATING · Respawning...") if player.dead else ""
 
 
 func _ordinal(n: int) -> String:

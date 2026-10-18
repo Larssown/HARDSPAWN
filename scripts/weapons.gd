@@ -6,6 +6,10 @@ const MG := 0
 const SHOTGUN := 1
 const ROCKET := 2
 const RAIL := 3
+const AMMO_CAPACITY := [200, 32, 20, 15]
+const START_AMMO := [120, 0, 0, 0]
+const WEAPON_PICKUP_AMMO := [0, 10, 6, 5]
+const AMMO_BOX_AMOUNT := [60, 10, 6, 5]
 
 const LIST := [
 	{"name": "MACHINEGUN", "short": "MG", "type": "hitscan", "fx": "tracer", "cooldown": 0.09,

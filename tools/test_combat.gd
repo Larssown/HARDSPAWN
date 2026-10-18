@@ -22,8 +22,8 @@ func _run() -> void:
 		return
 	var brain := dummy.brain
 	dummy.brain = null
-	player.teleport(Vector3(0, 0.1, 0), 0.0)
-	dummy.teleport(Vector3(0, 0.1, -5), PI)
+	player.teleport(Vector3(0, 0.1, -18), 0.0)
+	dummy.teleport(Vector3(0, 0.1, -23), PI)
 	await get_tree().physics_frame
 
 	if not Sfx.streams.has("hit_heavy") or not Sfx.streams.has("shotgun_pump"):
@@ -40,7 +40,7 @@ func _run() -> void:
 		_fail("Centred shotgun shot missed")
 		return
 
-	dummy.respawn(Vector3(0, 0.1, -5), PI)
+	dummy.respawn(Vector3(0, 0.1, -23), PI)
 	player.grant_weapon(Weapons.RAIL)
 	player.cooldown = 0.0
 	player._fire()
@@ -52,7 +52,7 @@ func _run() -> void:
 		_fail("Host did not confirm both hits")
 		return
 
-	dummy.respawn(Vector3(0, 0.1, -5), PI)
+	dummy.respawn(Vector3(0, 0.1, -23), PI)
 	for weapon_id in [Weapons.SHOTGUN, Weapons.ROCKET, Weapons.RAIL]:
 		dummy.grant_weapon(weapon_id)
 	brain._weapon_t = 0.0
@@ -66,7 +66,7 @@ func _run() -> void:
 		_fail("Bot did not choose railgun at long range")
 		return
 
-	player.teleport(Vector3(0, 0.1, 0), 0.0)
+	player.teleport(Vector3(0, 0.1, -18), 0.0)
 	player.grant_weapon(Weapons.ROCKET)
 	player.select_weapon(Weapons.ROCKET)
 	player.pitch = -1.45
@@ -83,7 +83,7 @@ func _run() -> void:
 		return
 
 	# A slightly angled floor shot should still reach the raised ledges.
-	player.respawn(Vector3(0, 0.1, 0), 0.0)
+	player.respawn(Vector3(0, 0.1, -18), 0.0)
 	player.grant_weapon(Weapons.ROCKET)
 	player.pitch = -1.08
 	player.head.rotation.x = player.pitch

@@ -358,7 +358,7 @@ func _register(pname: String) -> void:
 			continue
 		snapshot[pid] = {"info": players[pid], "pos": p.global_position, "yaw": p.yaw,
 			"dead": p.dead, "hp": p.health, "armor": p.armor,
-			"owned_weapons": p.owned_weapons, "weapon": p.weapon}
+			"owned_weapons": p.owned_weapons, "weapon": p.weapon, "ammo": p.ammo}
 	_client_init.rpc_id(id, match_cfg, time_left, match_over, snapshot, world.get_pickup_states())
 	_add_player(id, pname, false)
 	ready_peers.append(id)
@@ -379,7 +379,7 @@ func _client_init(cfg: Dictionary, t: float, over: bool, snapshot: Dictionary, p
 		var p := world.get_player(pid)
 		p.health = s.hp
 		p.armor = s.armor
-		p.set_loadout(s.owned_weapons, s.weapon)
+		p.set_loadout(s.owned_weapons, s.weapon, s.ammo)
 		if s.dead:
 			p.set_dead_silent()
 	world.set_pickup_states(pickup_states)

@@ -44,16 +44,18 @@ Realism är inte ett mål.
 | 2026-10-17 | Vapnet i förstapersonsvyn ska hållas nere till höger, med kolven vid bildkanten och pipan snett framåt mot mitten enligt Patriks referensbild. |
 | 2026-10-17 | Patrik vill att vapnen ska vara större i bild och sikta mer rakt fram. Raketgeväret ska fylla mer av nedre högra hörnet, som i den nya referensbilden. |
 | 2026-10-17 | Patrik vill satsa fullt på spelets grafik. Den industriella stilen och banans läsbarhet ska styra arbetet, med fortsatt hänsyn till målet om ett lättdrivet spel. |
+| 2026-10-18 | Den slutna prototypbanan ersätts av en egen öppen, kompakt arena i tre nivåer för snabba 1v1- och 2v2-strider. Den tar inspiration från Q3DM17:s vertikalitet och Facing Worlds utsatta höjder utan att kopiera deras layout. Markväg runt en avgrund, övre gångar, två torn, railgun på högsta nivån och Mega Health på en exponerad bro. |
+| 2026-10-18 | Hoppplattor ska vara Area3D med inställbar höjd och riktning. Lava/avgrund ska ge omedelbar död och åskådarläge under respawntiden. Maskingevärsammo ligger på marknivån; vapnen får begränsad ammunition. Slutlig ammunitionsbalans kan finjusteras. |
 
 ## 4. Pågående
-- Den första egna, takförsedda rumsbanan finns i spelet: förskjutna dörrar, sidokorridorer, höjdskillnader och flera rundor mellan rummen. Layouten ska speltestas och justeras efter Patriks feedback.
+- Den öppna tredelade banan **The Crucible** byggs av CSG-former med kollision: markperimeter, övre ring och bro, två tornplattformar, gångbara ramper, hoppplattor och dödliga fall. Layouten ska speltestas och justeras efter Patriks feedback.
 - Vapenpickups på fasta platser finns på kartan. Alla andra items behåller fasta platser.
 - Första passet för vapenkänsla är på plats: kraftigare träffrespons för rail och hagel, tydligare hagelspridning, rocket jump med sneda markskott och botar som väljer vapen efter avstånd.
 - Kartan använder nu utvalda texturer för golv, väggar, metall och innertak. Ljusa väggar och markerade passager ska fortsatt göra rummen lättlästa.
 - Färdiga lågpolyvapen ersätter de enkla lådmodellerna i spelarens händer och på kartans vapenplatser. Hagelgevär och railgun använder närliggande former ur paketet.
 - Förstapersonsvapnen ritas nu i en separat transparent vy (`scripts/viewmodel_overlay.gd`) så att större modeller syns framför väggar. Skottens mynning räknas fortfarande om till spelkamerans position.
-- Banans grafikpass bygger upp mörkare metallpaneler, dörrinfattningar, takbalkar, rör, armaturer, ventiler, markerade golvytor och mer genomarbetade skydd och pickups. En huvudlampa ger skuggor och övriga lampor hålls billigare.
-- Ammunitionsreglerna ingår ännu inte i det beslutade arbetet.
+- Den nya banan behåller rostig metall, betong, varma armaturer och tydliga varningsmarkeringar kring stupen. Föregående rumsbana finns kvar i git-historiken.
+- Maskingeväret startar med 120 skott. Fasta ammolådor på marknivån ger 60 skott, andra vapen får ammunition vid pickup och alla vapen har en maxgräns. Mängder och respawntider är första spelbara balansen.
 
 ### Föreslagen plan för kartan och pickups (förslag från Claude, INTE beslutat av Patrik)
 Det här är tidigare idéer. Patrik har godkänt att arbetet med karta och vapenpickups börjar,
@@ -75,7 +77,7 @@ men har inte beslutat om alla detaljer i detta förslag.
   - Gratis CC0-assets används när Patrik godkänt nedladdning (se öppna frågor).
 
 ## 5. Öppna frågor (Patrik har inte bestämt)
-- Hur ska ammunitionen fungera (ammolådor, hur mycket ammo vapen ger)?
+- Vilka slutliga ammomängder och respawntider ger bäst duellbalans?
 - Hur lång tid tar det innan vapen och items kommer tillbaka?
 - Får vi ladda ner gratis assets (texturer och modeller med CC0-licens, t.ex. ambientCG, Poly Haven, Quaternius och Kenney)?
 
@@ -102,7 +104,7 @@ men har inte beslutat om alla detaljer i detta förslag.
 - `scripts/world.gd`: den pågående matchen. Ligger på `/root/World` hos alla så att RPC-sökvägarna stämmer.
 - `scripts/player.gd`: rörelse, vapen och nätsynk. Varje människa simulerar sin egen spelare. Botar simuleras på hosten.
 - `scripts/bot_brain.gd`: bot-AI som använder navmesh.
-- `scripts/arena.gd`: banan (byggd av lådor i kod; prototyp).
+- `scripts/arena.gd`: den procedurgenererade tredelade CSG-banan. `scripts/jump_pad.gd` och `scripts/kill_zone.gd`: launch och fallzoner.
 - `scripts/weapons.gd`: vapendata. `scripts/viewmodel.gd`: vapnet i förstapersonsvy.
 - `scripts/hud.gd`, `scripts/menu.gd`: gränssnitt. `scripts/fx.gd`: effekter. `scripts/sfx.gd`: ljud.
 - `tools/gen_sfx.py`: genererar platshållarljuden i `assets/sfx/`.

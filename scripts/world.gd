@@ -7,6 +7,7 @@ const PICKUP_INFO := {
 	"health": {"respawn": 20.0, "sfx": "pickup_health"},
 	"mega": {"respawn": 35.0, "sfx": "pickup_mega"},
 	"armor": {"respawn": 25.0, "sfx": "pickup_armor"},
+	"ammo": {"respawn": 12.0, "sfx": "switch"},
 	# Temporary tuning value; final weapon timing is still Patrik's decision.
 	"weapon": {"respawn": 10.0, "sfx": "switch"},
 }
@@ -122,6 +123,11 @@ func _try_take(pl: Player, pk: PickupNode) -> bool:
 				return false
 			_grant_weapon.rpc(pl.peer_id, pk.weapon_id)
 			return true
+		"ammo":
+			if pl.ammo[pk.weapon_id] >= Weapons.AMMO_CAPACITY[pk.weapon_id]:
+				return false
+			_grant_ammo.rpc(pl.peer_id, pk.weapon_id, Weapons.AMMO_BOX_AMOUNT[pk.weapon_id])
+			return true
 		"health":
 			if hp >= 100.0:
 				return false
@@ -143,6 +149,13 @@ func _grant_weapon(player_id: int, weapon_id: int) -> void:
 	var pl := get_player(player_id)
 	if pl:
 		pl.grant_weapon(weapon_id)
+
+
+@rpc("authority", "call_local", "reliable")
+func _grant_ammo(player_id: int, weapon_id: int, amount: int) -> void:
+	var pl := get_player(player_id)
+	if pl:
+		pl.add_ammo(weapon_id, amount)
 
 
 func _set_pickup(i: int, avail: bool) -> void:

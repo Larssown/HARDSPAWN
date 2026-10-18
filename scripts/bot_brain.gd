@@ -85,6 +85,7 @@ func think(delta: float) -> void:
 		move = _follow_path(delta)
 		if move != Vector3.ZERO:
 			_turn_toward(move, delta)
+	move = _avoid_void(move)
 
 	var local := Basis(Vector3.UP, p.yaw).inverse() * move
 	p.in_move = Vector2(local.x, local.z).limit_length(1.0)
@@ -156,15 +157,15 @@ func _choose_weapon(dist: float, delta: float) -> void:
 		return
 	_weapon_t = 0.7
 	var best := Weapons.MG
-	if dist < 7.0 and p.has_weapon(Weapons.SHOTGUN):
+	if dist < 7.0 and p.has_weapon(Weapons.SHOTGUN) and p.ammo[Weapons.SHOTGUN] > 0:
 		best = Weapons.SHOTGUN
-	elif dist >= 18.0 and p.has_weapon(Weapons.RAIL):
+	elif dist >= 18.0 and p.has_weapon(Weapons.RAIL) and p.ammo[Weapons.RAIL] > 0:
 		best = Weapons.RAIL
-	elif dist >= 5.0 and p.has_weapon(Weapons.ROCKET):
+	elif dist >= 5.0 and p.has_weapon(Weapons.ROCKET) and p.ammo[Weapons.ROCKET] > 0:
 		best = Weapons.ROCKET
-	elif dist < 12.0 and p.has_weapon(Weapons.SHOTGUN):
+	elif dist < 12.0 and p.has_weapon(Weapons.SHOTGUN) and p.ammo[Weapons.SHOTGUN] > 0:
 		best = Weapons.SHOTGUN
-	elif p.has_weapon(Weapons.RAIL):
+	elif p.has_weapon(Weapons.RAIL) and p.ammo[Weapons.RAIL] > 0:
 		best = Weapons.RAIL
 	p.select_weapon(best)
 
@@ -185,6 +186,24 @@ func _avoid_wall(wanted: Vector3) -> Vector3:
 	if _clear_ahead(side):
 		return side
 	return -wanted
+
+
+func _avoid_void(wanted: Vector3) -> Vector3:
+	if wanted == Vector3.ZERO or not p.is_on_floor() or _floor_ahead(wanted):
+		return wanted
+	var side := wanted.rotated(Vector3.UP, _strafe * PI * 0.5)
+	if _floor_ahead(side):
+		return side
+	if _floor_ahead(-side):
+		return -side
+	return -wanted
+
+
+func _floor_ahead(dir: Vector3) -> bool:
+	var at := p.global_position + dir.normalized() * 2.2
+	var ray := PhysicsRayQueryParameters3D.create(at + Vector3.UP * 2.0,
+		at - Vector3.UP * 4.5, 1)
+	return not p.get_world_3d().direct_space_state.intersect_ray(ray).is_empty()
 
 
 func _pick_goal() -> Vector3:
