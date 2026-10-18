@@ -1,7 +1,7 @@
 class_name MegastructureBackdrop
 extends Node3D
 ## Deterministic, decorative silhouettes outside the playable arena.
-## BoxMesh instances have no collision and cast no shadows on the match.
+## BoxMesh instances have no collision. Their silhouettes cast volumetric shafts.
 
 @export_range(20, 40, 1) var tower_count := 32
 @export var inner_radius := 80.0
@@ -44,6 +44,6 @@ func generate() -> void:
 		tower.material_override = material
 		tower.position = Vector3(cos(angle) * radius, (base_y + top_y) * 0.5,
 			sin(angle) * radius)
-		tower.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		tower.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		tower.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 		add_child(tower)

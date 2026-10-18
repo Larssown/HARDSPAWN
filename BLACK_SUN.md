@@ -1,38 +1,45 @@
-# Den svarta solen
+# Den svarta solen i 3D
 
-`Arena._black_sun()` lägger automatiskt till noden **BlackSun** när banan byggs.
-Du behöver inte montera den för hand i HARDSPAWN.
+Förmörkelsen skapas automatiskt av `Arena._black_sun()` och behöver inte
+byggas manuellt i HARDSPAWN. Den gamla 2D-bildplanen används inte längre.
+Originalbilden ligger kvar i `assets/sky/black_sun.jpg` som visuell referens.
 
-## Nod och placering
+## Noder
 
-`BlackSun` är en `MeshInstance3D` med ett enda `QuadMesh` på **180 × 180 m**.
-Den placeras vid **`Vector3(0, 220, -220)`**. Spelkamerans bortre gräns är
-**450 m**, vilket lämnar marginal för koronans yttersta strålar. Den föreslagna
-placeringen `(0, 150, -500)` hade klippts bort utan en betydligt större gräns.
-`scripts/black_sun.gd` vänder bildplanet mot den aktiva kameran varje bildruta.
-Bildplanet saknar kollision, skuggor och påverkan på global belysning.
+```text
+Arena
+├── WorldEnvironment          # svag volymdimma och glow
+├── MegastructureBackdrop    # BoxMesh utan kollision, med skuggor
+└── BlackSun (Node3D)        # position (0, 245, -160)
+    ├── BlackMoon (MeshInstance3D / SphereMesh)
+    ├── CoronaSphere (MeshInstance3D / SphereMesh)
+    └── EclipseBacklight (DirectionalLight3D)
+```
 
-Bildfilen hette `solar.png` men innehåller JPEG-data och ligger därför i
-`assets/sky/black_sun.jpg`.
+`scripts/black_sun.gd` skapar två lågdetaljerade sfärer. Den främre är
+ogenomskinligt svart, har radie **55 m** och kastar skugga. Bakom den ligger
+en större sfär med radie **72 m** och orange emission **10**, som ger en smal
+ljusring via scenens befintliga glow. Den flyttas varsamt uppåt för att båda
+sfärernas skivor ska sammanfalla sett från spelområdet. Koronans storlek och
+emission varierar svagt under **7,5 sekunder**. Inga externa texturer behövs.
+Månens yta undantas från dimmans färg så att skivan förblir svart; den har
+fortfarande verkligt djup och kastar skugga i volymdimman.
 
-## Material och ljus
+Motljuset har varm färg, energi **0,9**, volymdimmeenergi **6**, två
+skuggdelningar och skuggavstånd **320 m**. `DirectionalLight3D` använder sin
+**rotation**, inte sin position, för ljusriktningen. Den ljusande sfären gör
+själva koronan synlig; motljuset och skuggorna från månen och monoliterna
+gör dimljuset synligt. Monoliterna saknar fortfarande kollision.
 
-`shaders/black_sun.gdshader` använder **Unshaded**, **Alpha/Mix**,
-**No Depth Test**, **No Depth Draw** och **Fog Disabled**. Materialets
-`render_priority` är **100**. Det ritas därför ovanpå de avlägsna tornen.
+`Arena._environment()` använder tunn volymdimma: densitet **0,0005**,
+anisotropi **0,65**, längd **300 m** och svart avståndsdimma från **95 till
+340 m**. Spelområdet behåller sin skärpa. Djupupplösningen för volymdimman
+är **48** för att hålla kostnaden nere. Effekten kräver Godots Forward+
+rendering, som spelet använder. Ljuset är avsiktligt subtilt så att lava,
+pickups och spelare förblir lätta att se.
 
-En enkel mask i shadern gör bildens yttre svarta bakgrund genomskinlig men håller
-mittskivan ogenomskinligt svart. Den ljusa koronan får emission med grundvärde
-**1,25** och glöder via arenans redan aktiva `WorldEnvironment.glow`.
-Ren additiv blandning på hela bilden hade gjort även den svarta mittskivan
-genomskinlig; därför används alfa här.
-
-Skriptet låter solen andas över **7,5 sekunder**: storleken varierar **±1,2 %**
-och emissionen **±0,08**. Inga partiklar eller extra ljuskällor används.
-
-## I en annan Godot-scen
-
-1. Lägg till en `MeshInstance3D` och koppla `scripts/black_sun.gd` till den.
-2. Sätt positionen till `Vector3(0, 220, -220)` eller en plats inom kamerans
-   `far`-avstånd. Skriptet skapar `QuadMesh` och material automatiskt.
-3. Aktivera **Glow** i scenens `WorldEnvironment` (HARDSPAWN har redan gjort det).
+Om förmörkelsen ska användas i en annan scen: lägg till ett `Node3D`, koppla
+`scripts/black_sun.gd` till det, sätt positionen till `(0, 245, -160)`,
+aktivera glow och volymdimma i `WorldEnvironment`, och låt avlägsna byggnader
+kasta skuggor. Sfärerna använder vanlig djupprövning: när en byggnad ligger
+framför solen skymmer den solen.

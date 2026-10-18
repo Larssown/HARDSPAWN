@@ -126,7 +126,17 @@ func _environment() -> void:
 	env.fog_height = -50.0
 	env.fog_height_density = 0.2
 	env.fog_sky_affect = 0.0
-	env.volumetric_fog_enabled = false
+	# Thin scattering reveals the eclipse light and monolith shadows without
+	# washing out the compact playable arena.
+	env.volumetric_fog_enabled = true
+	env.volumetric_fog_density = 0.0005
+	env.volumetric_fog_albedo = Color(0.35, 0.35, 0.35)
+	env.volumetric_fog_ambient_inject = 0.0
+	env.volumetric_fog_gi_inject = 0.0
+	env.volumetric_fog_anisotropy = 0.65
+	env.volumetric_fog_length = 300.0
+	env.volumetric_fog_sky_affect = 1.0
+	env.volumetric_fog_temporal_reprojection_enabled = true
 	var world := WorldEnvironment.new()
 	world.environment = env
 	add_child(world)
@@ -387,8 +397,9 @@ func _backdrop() -> void:
 func _black_sun() -> void:
 	var sun := BlackSun.new()
 	sun.name = "BlackSun"
-	# The player camera ends at 450 m, leaving room for the corona's outer rays.
-	sun.position = Vector3(0.0, 220.0, -220.0)
+	# Both spheres stay inside the player's 450 m far plane. Real depth lets
+	# foreground monoliths naturally occlude the eclipse.
+	sun.position = Vector3(0.0, 245.0, -160.0)
 	add_child(sun)
 
 
@@ -412,6 +423,7 @@ func _lighting() -> void:
 	sun.rotation_degrees = Vector3(-58, -28, 0)
 	sun.light_color = Color(0.92, 0.94, 1.0)
 	sun.light_energy = 0.8
+	sun.light_volumetric_fog_energy = 0.0
 	sun.shadow_enabled = true
 	sun.shadow_blur = 1.5
 	sun.directional_shadow_max_distance = 90.0
@@ -420,12 +432,14 @@ func _lighting() -> void:
 	fill.rotation_degrees = Vector3(-25, 150, 0)
 	fill.light_color = Color(0.7, 0.75, 0.85)
 	fill.light_energy = 0.18
+	fill.light_volumetric_fog_energy = 0.0
 	add_child(fill)
 	for at in [Vector3(-11, 4.0, -11), Vector3(11, 4.0, 11), Vector3(-11, 4.0, 11), Vector3(11, 4.0, -11)]:
 		var light := OmniLight3D.new()
 		light.position = at
 		light.light_color = Color(0.95, 0.95, 1.0)
 		light.light_energy = 0.7
+		light.light_volumetric_fog_energy = 0.0
 		light.omni_range = 9.0
 		add_child(light)
 
