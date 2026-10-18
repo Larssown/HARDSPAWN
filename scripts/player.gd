@@ -95,7 +95,7 @@ func _ready() -> void:
 		camera.keep_aspect = Camera3D.KEEP_WIDTH  # FOV is horizontal, like Quake
 		camera.fov = float(Game.settings.fov)
 		camera.near = 0.03
-		camera.far = 400.0
+		camera.far = 450.0
 		head.add_child(camera)
 		camera.current = true
 		aim_ray = RayCast3D.new()

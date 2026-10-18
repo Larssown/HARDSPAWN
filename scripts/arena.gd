@@ -42,6 +42,7 @@ func build() -> void:
 	_navigation_links()
 	_details()
 	_backdrop()
+	_black_sun()
 	_lighting()
 	_hazards()
 	_compute_joins()
@@ -381,6 +382,14 @@ func _backdrop() -> void:
 	var backdrop := MegastructureBackdrop.new()
 	backdrop.name = "MegastructureBackdrop"
 	add_child(backdrop)
+
+
+func _black_sun() -> void:
+	var sun := BlackSun.new()
+	sun.name = "BlackSun"
+	# The player camera ends at 450 m, leaving room for the corona's outer rays.
+	sun.position = Vector3(0.0, 220.0, -220.0)
+	add_child(sun)
 
 
 func _navigation_links() -> void:
