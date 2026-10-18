@@ -27,6 +27,9 @@ var _dark: ShaderMaterial
 var _pit_wall: ShaderMaterial
 var _lamp: StandardMaterial3D
 var _gold: StandardMaterial3D
+## Boxes registered per group; touching sides inside a group are drawn seamless.
+var _join_groups := {}
+var _gate_count := 0
 
 
 func build() -> void:
@@ -41,6 +44,7 @@ func build() -> void:
 	_backdrop()
 	_lighting()
 	_hazards()
+	_compute_joins()
 	_gameplay_points()
 
 
@@ -123,7 +127,8 @@ func _environment() -> void:
 # --- Building blocks ---------------------------------------------------------------
 
 ## Box mesh with the concept edge shader. `solid` adds gameplay + navmesh collision.
-func _box(at: Vector3, size: Vector3, material: ShaderMaterial, solid := true, basis := Basis.IDENTITY) -> MeshInstance3D:
+func _box(at: Vector3, size: Vector3, material: ShaderMaterial, solid := true, basis := Basis.IDENTITY,
+		group := "") -> MeshInstance3D:
 	var mesh := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = size
@@ -145,7 +150,56 @@ func _box(at: Vector3, size: Vector3, material: ShaderMaterial, solid := true, b
 	else:
 		mesh.transform = Transform3D(basis, at)
 		add_child(mesh)
+	if group != "":
+		if not _join_groups.has(group):
+			_join_groups[group] = []
+		_join_groups[group].append([mesh, AABB(at - size * 0.5, size)])
 	return mesh
+
+
+## Box given by its min/max corners (axis aligned), for seamless groups.
+func _span(from: Vector3, to: Vector3, material: ShaderMaterial, group: String, solid := true) -> void:
+	var lo := Vector3(minf(from.x, to.x), minf(from.y, to.y), minf(from.z, to.z))
+	var hi := Vector3(maxf(from.x, to.x), maxf(from.y, to.y), maxf(from.z, to.z))
+	_box((lo + hi) * 0.5, hi - lo, material, solid, Basis.IDENTITY, group)
+
+
+## Hides outlines on sides that are completely covered by a block of the same group,
+## so floors and walkways built from several boxes read as one piece.
+func _compute_joins() -> void:
+	for group in _join_groups:
+		var list: Array = _join_groups[group]
+		for item in list:
+			var box: AABB = item[1]
+			var jp := Vector3.ZERO
+			var jn := Vector3.ZERO
+			for axis in 3:
+				if _face_covered(box, axis, 1.0, list, item):
+					jp[axis] = 1.0
+				if _face_covered(box, axis, -1.0, list, item):
+					jn[axis] = 1.0
+			var mesh: MeshInstance3D = item[0]
+			mesh.set_instance_shader_parameter("join_pos", jp)
+			mesh.set_instance_shader_parameter("join_neg", jn)
+
+
+func _face_covered(box: AABB, axis: int, sgn: float, list: Array, self_item: Array) -> bool:
+	var u := (axis + 1) % 3
+	var v := (axis + 2) % 3
+	for i in 5:
+		for k in 5:
+			var p := box.get_center()
+			p[axis] = (box.end[axis] if sgn > 0.0 else box.position[axis]) + 0.02 * sgn
+			p[u] = lerpf(box.position[u] + 0.03, box.end[u] - 0.03, i / 4.0)
+			p[v] = lerpf(box.position[v] + 0.03, box.end[v] - 0.03, k / 4.0)
+			var inside := false
+			for other in list:
+				if other != self_item and (other[1] as AABB).grow(0.001).has_point(p):
+					inside = true
+					break
+			if not inside:
+				return false
+	return true
 
 
 ## Invisible collision box (used under stair visuals so movement stays smooth).
@@ -192,50 +246,78 @@ func _stairs(low: Vector3, high: Vector3, width: float) -> void:
 		var slab := 0.5
 		_box(Vector3(along.x, top - slab * 0.5, along.z), Vector3(width, slab, depth + 0.01), _bridge, false, yaw_basis)
 	# Side stringers along both edges
+	# Side stringers hide the step ends and read as solid stair walls.
+	# They stop half a step short of both ends so nothing pokes up onto the floor.
+	var ramp_len := low.distance_to(high)
+	var sin_a := rise / ramp_len
+	var trim_low := depth * 0.6
+	var trim_high := (step_h + 0.06) / sin_a  # top edge ends below the platform surface
+	var along := (trim_low + ramp_len - trim_high) * 0.5
 	for side in [-1.0, 1.0]:
-		var offset: Vector3 = yaw_basis.x * side * (width * 0.5 + 0.12)
-		_box((low + high) * 0.5 + offset - ramp_basis.y * 0.35 + Vector3(0, step_h * 0.5, 0),
-			Vector3(0.24, 0.7, low.distance_to(high) + 0.3), _dark, false, ramp_basis)
+		var offset: Vector3 = yaw_basis.x * side * (width * 0.5 + 0.13)
+		var top_line := low + ramp_dir * along + Vector3(0, step_h, 0)
+		_box(top_line + offset - ramp_basis.y * 0.5, Vector3(0.24, 1.0, ramp_len - trim_low - trim_high),
+			_dark, false, ramp_basis)
 
 
 ## Rectangular portal frame (two posts and a lintel), solid.
+## The lintel sits between the posts (no overlapping faces), drawn as one frame.
 func _gate(center: Vector3, width: float, height: float, thickness: float, along_x: bool) -> void:
+	_gate_count += 1
+	var group := "gate%d" % _gate_count
 	var post := Vector3(thickness, height, thickness)
 	for side in [-1.0, 1.0]:
 		var off: Vector3 = Vector3(side * (width * 0.5 - thickness * 0.5), 0, 0) if along_x \
 			else Vector3(0, 0, side * (width * 0.5 - thickness * 0.5))
-		_box(center + off + Vector3(0, height * 0.5, 0), post, _block)
-	var lintel := Vector3(width, thickness, thickness) if along_x else Vector3(thickness, thickness, width)
-	_box(center + Vector3(0, height - thickness * 0.5, 0), lintel, _block)
+		_box(center + off + Vector3(0, height * 0.5, 0), post, _block, true, Basis.IDENTITY, group)
+	var inner := width - thickness * 2.0
+	var lintel := Vector3(inner, thickness, thickness) if along_x else Vector3(thickness, thickness, inner)
+	_box(center + Vector3(0, height - thickness * 0.5, 0), lintel, _block, true, Basis.IDENTITY, group)
 
 
 # --- Layout (positions unchanged from ChatGPT's Crucible) -----------------------------
 
 func _geometry() -> void:
-	# Cruciform floor around the pit, with short wings on each side.
-	_box(Vector3(0, -1.0, -18.5), Vector3(46, 2.0, 23), _floor)
-	_box(Vector3(0, -1.0, 18.5), Vector3(46, 2.0, 23), _floor)
-	_box(Vector3(-18.5, -1.0, 0), Vector3(23, 2.0, 44), _floor)
-	_box(Vector3(18.5, -1.0, 0), Vector3(23, 2.0, 44), _floor)
-	_box(Vector3(0, -1.0, -32.0), Vector3(14, 2.0, 5), _floor)
-	_box(Vector3(0, -1.0, 32.0), Vector3(14, 2.0, 5), _floor)
-	_box(Vector3(-32.0, -1.0, 0), Vector3(5, 2.0, 14), _floor)
-	_box(Vector3(32.0, -1.0, 0), Vector3(5, 2.0, 14), _floor)
+	# Cruciform floor around the pit with short wings, built from pieces that
+	# touch but never overlap (overlapping faces flicker and draw stray lines).
+	for s in [-1.0, 1.0]:
+		_span(Vector3(-7, -2, 7 * s), Vector3(7, 0, 30 * s), _floor, "floor")       # N/S arm
+		_span(Vector3(7 * s, -2, -7), Vector3(30 * s, 0, 7), _floor, "floor")       # E/W arm
+		_span(Vector3(-7, -2, 30 * s), Vector3(7, 0, 34.5 * s), _floor, "floor")    # N/S wing
+		_span(Vector3(30 * s, -2, -7), Vector3(34.5 * s, 0, 7), _floor, "floor")    # E/W wing
+		for t in [-1.0, 1.0]:
+			_span(Vector3(7 * s, -2, 7 * t), Vector3(23 * s, 0, 22 * t), _floor, "floor")
+			_span(Vector3(7 * s, -2, 22 * t), Vector3(23 * s, 0, 30 * t), _floor, "floor")
+			_span(Vector3(23 * s, -2, 7 * t), Vector3(30 * s, 0, 22 * t), _floor, "floor")
 
-	# Level two: four-sided gallery and the exposed bridge across the pit.
-	_box(Vector3(0, 4.65, -11), Vector3(28, 0.7, 4.2), _bridge)
-	_box(Vector3(0, 4.65, 11), Vector3(28, 0.7, 4.2), _bridge)
-	_box(Vector3(-11, 4.65, 0), Vector3(4.2, 0.7, 22), _bridge)
-	_box(Vector3(11, 4.65, 0), Vector3(4.2, 0.7, 22), _bridge)
-	_box(Vector3(0, 4.65, 0), Vector3(22, 0.7, 2.8), _bridge)
-	_stairs(Vector3(-11.5, 0, -25), Vector3(-11.5, MID, -11), 3.5)
-	_stairs(Vector3(11.5, 0, 25), Vector3(11.5, MID, 11), 3.5)
+	# Level two: four-sided gallery and the exposed bridge across the pit,
+	# also split into touching pieces so its surface is one clean shape.
+	for s in [-1.0, 1.0]:
+		_span(Vector3(-8.9, 4.3, 8.9 * s), Vector3(8.9, 5.0, 13.1 * s), _bridge, "gallery")
+		_span(Vector3(8.9 * s, 4.3, 1.4), Vector3(13.1 * s, 5.0, 8.9), _bridge, "gallery")
+		_span(Vector3(8.9 * s, 4.3, -1.4), Vector3(13.1 * s, 5.0, 1.4), _bridge, "gallery")
+		_span(Vector3(8.9 * s, 4.3, -8.9), Vector3(13.1 * s, 5.0, -1.4), _bridge, "gallery")
+		for t in [-1.0, 1.0]:
+			_span(Vector3(8.9 * s, 4.3, 8.9 * t), Vector3(13.1 * s, 5.0, 13.1 * t), _bridge, "gallery")
+	_span(Vector3(-8.9, 4.3, -1.4), Vector3(8.9, 5.0, 1.4), _bridge, "gallery")
+	# Lower stairs end exactly at the gallery's outer edge.
+	_stairs(Vector3(-11.5, 0, -25), Vector3(-11.5, MID, -13.1), 3.5)
+	_stairs(Vector3(11.5, 0, 25), Vector3(11.5, MID, 13.1), 3.5)
 
 	# Level three: two crowns on top of square towers.
-	_box(Vector3(-17, 9.65, -18), Vector3(10.5, 0.7, 8.5), _block)
-	_box(Vector3(17, 9.65, 18), Vector3(10.5, 0.7, 8.5), _block)
-	_stairs(Vector3(-11.5, MID, -11), Vector3(-17, TOP, -18), 3.2)
-	_stairs(Vector3(11.5, MID, 11), Vector3(17, TOP, 18), 3.2)
+	# Upper stairs climb from the gallery edge to a landing beside each crown.
+	# (The old diagonal route ran in under the crown and players got stuck.)
+	for s in [-1.0, 1.0]:
+		_stairs(Vector3(7.2 * s, MID, 13.1 * s), Vector3(7.2 * s, TOP, 23.1 * s), 3.2)
+		# Crown + walkway: stair top -> end landing -> side path -> crown. Nothing
+		# hangs over the stairs (head room), and every seam is a full shared side.
+		var g := "crown%d" % int(s)
+		_span(Vector3(11.75 * s, 9.3, 20.0 * s), Vector3(22.25 * s, 10.0, 22.25 * s), _block, g)
+		_span(Vector3(11.75 * s, 9.3, 13.75 * s), Vector3(22.25 * s, 10.0, 20.0 * s), _block, g)
+		_span(Vector3(9.1 * s, 9.3, 20.0 * s), Vector3(11.75 * s, 10.0, 22.25 * s), _block, g)
+		_span(Vector3(9.1 * s, 9.3, 22.25 * s), Vector3(11.75 * s, 10.0, 23.1 * s), _block, g)
+		_span(Vector3(9.1 * s, 9.3, 23.1 * s), Vector3(11.75 * s, 10.0, 25.1 * s), _block, g)
+		_span(Vector3(5.2 * s, 9.3, 23.1 * s), Vector3(9.1 * s, 10.0, 25.1 * s), _block, g)
 	_box(Vector3(-21, 4.6, -21), Vector3(4.2, 9.2, 4.2), _block)
 	_box(Vector3(21, 4.6, 21), Vector3(4.2, 9.2, 4.2), _block)
 
@@ -259,13 +341,13 @@ func _details() -> void:
 	for z in [-11.0, 0.0, 11.0]:
 		_box(Vector3(0, 4.15, z), Vector3(24, 0.3, 0.4), _dark, false)
 	for x in [-11.0, 11.0]:
-		_box(Vector3(x, 4.15, 0), Vector3(0.4, 0.3, 20), _dark, false)
+		_box(Vector3(x, 4.16, 0), Vector3(0.38, 0.28, 20), _dark, false)
 	# Gallery arches over the centre crossing.
 	for x in [-11.0, 11.0]:
 		_gate(Vector3(x, MID, 0), 5.9, 4.4, 0.6, false)
 	# Portal frames on the tower crowns (rail perch) and at the four wing ends.
-	_gate(Vector3(-17, TOP, -21.6), 7.0, 5.2, 0.9, true)
-	_gate(Vector3(17, TOP, 21.6), 7.0, 5.2, 0.9, true)
+	_gate(Vector3(-16.5, TOP, -21.6), 6.0, 5.2, 0.9, true)
+	_gate(Vector3(16.5, TOP, 21.6), 6.0, 5.2, 0.9, true)
 	_gate(Vector3(0, LOWER, -33.6), 11.0, 7.5, 1.1, true)
 	_gate(Vector3(0, LOWER, 33.6), 11.0, 7.5, 1.1, true)
 	_gate(Vector3(-33.6, LOWER, 0), 11.0, 7.5, 1.1, false)
@@ -276,8 +358,8 @@ func _details() -> void:
 		_box(t + Vector3(0, 15.4, 0), Vector3(3.0, 0.6, 3.0), _dark, false)
 		_box(t + Vector3(0, 17.2, 0), Vector3(0.8, 3.0, 0.8), _block, false)
 	# Lamp strips under the gallery.
-	for x in [-8.0, 0.0, 8.0]:
-		for z in [-11.0, 11.0]:
+	for x in [-6.0, 0.0, 6.0]:
+		for z in [-12.3, -9.7, 9.7, 12.3]:
 			_mesh(_boxmesh(Vector3(2.4, 0.05, 0.24)), Vector3(x, 4.27, z), _lamp)
 
 
@@ -300,10 +382,10 @@ func _backdrop() -> void:
 
 
 func _navigation_links() -> void:
-	_link(Vector3(-11.5, LOWER, -25), Vector3(-11.5, MID, -11))
-	_link(Vector3(11.5, LOWER, 25), Vector3(11.5, MID, 11))
-	_link(Vector3(-11.5, MID, -11), Vector3(-17, TOP, -18))
-	_link(Vector3(11.5, MID, 11), Vector3(17, TOP, 18))
+	_link(Vector3(-11.5, LOWER, -25.5), Vector3(-11.5, MID, -12.6))
+	_link(Vector3(11.5, LOWER, 25.5), Vector3(11.5, MID, 12.6))
+	_link(Vector3(-7.2, MID, -12.6), Vector3(-7.2, TOP, -23.1))
+	_link(Vector3(7.2, MID, 12.6), Vector3(7.2, TOP, 23.1))
 
 
 func _link(from: Vector3, to: Vector3) -> void:
@@ -361,9 +443,11 @@ func _hazards() -> void:
 	lava_mat.set_shader_parameter("core_color", Color(1.0, 0.72, 0.32))
 	lava_mat.set_shader_parameter("emission_strength", 4.5)
 	# Pit walls catch the lava's light, like the concept image.
+	# A thin tiled skin just in front of the floor's edge, full height, so the
+	# whole wall glows evenly (2 cm gap: no overlapping faces, no flicker).
 	for side in [-1.0, 1.0]:
-		_box(Vector3(side * 7.25, -2.15, 0), Vector3(0.6, 4.3, 15.1), _pit_wall, false)
-		_box(Vector3(0, -2.15, side * 7.25), Vector3(13.9, 4.3, 0.6), _pit_wall, false)
+		_span(Vector3(6.98 * side, -4.4, -6.98), Vector3(7.0 * side, -0.01, 6.98), _pit_wall, "pit", false)
+		_span(Vector3(-6.98, -4.4, 6.98 * side), Vector3(6.98, -0.01, 7.0 * side), _pit_wall, "pit", false)
 	# Warm light spilling out of the pit onto the surrounding blocks.
 	var spill := OmniLight3D.new()
 	spill.position = Vector3(0, 1.0, 0)
