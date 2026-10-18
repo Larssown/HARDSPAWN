@@ -42,7 +42,6 @@ func build() -> void:
 	_navigation_links()
 	_details()
 	_backdrop()
-	_black_sun()
 	_lighting()
 	_hazards()
 	_compute_joins()
@@ -126,7 +125,7 @@ func _environment() -> void:
 	env.fog_height = -50.0
 	env.fog_height_density = 0.2
 	env.fog_sky_affect = 0.0
-	# Thin scattering reveals the eclipse light and monolith shadows without
+	# Thin scattering reveals the distant backlight and monolith shadows without
 	# washing out the compact playable arena.
 	env.volumetric_fog_enabled = true
 	env.volumetric_fog_density = 0.0005
@@ -394,15 +393,6 @@ func _backdrop() -> void:
 	add_child(backdrop)
 
 
-func _black_sun() -> void:
-	var sun := BlackSun.new()
-	sun.name = "BlackSun"
-	# Both spheres stay inside the player's 450 m far plane. Real depth lets
-	# foreground monoliths naturally occlude the eclipse.
-	sun.position = Vector3(0.0, 245.0, -160.0)
-	add_child(sun)
-
-
 func _navigation_links() -> void:
 	_link(Vector3(-11.5, LOWER, -25.5), Vector3(-11.5, MID, -12.6))
 	_link(Vector3(11.5, LOWER, 25.5), Vector3(11.5, MID, 12.6))
@@ -419,6 +409,21 @@ func _link(from: Vector3, to: Vector3) -> void:
 
 
 func _lighting() -> void:
+	# Warm light in the distant fog, with no visible sun or circular meshes.
+	var backlight := DirectionalLight3D.new()
+	backlight.name = "DistantBacklight"
+	backlight.position = Vector3(0.0, 300.0, -245.0)
+	backlight.light_color = Color(1.0, 0.75, 0.55)
+	backlight.light_energy = 0.9
+	backlight.light_volumetric_fog_energy = 6.0
+	backlight.shadow_enabled = true
+	backlight.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	backlight.directional_shadow_max_distance = 320.0
+	backlight.shadow_blur = 2.0
+	add_child(backlight)
+	# DirectionalLight3D uses orientation, not its position, for illumination.
+	backlight.look_at(Vector3(0.0, 140.0, 0.0), Vector3.UP)
+
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-58, -28, 0)
 	sun.light_color = Color(0.92, 0.94, 1.0)
