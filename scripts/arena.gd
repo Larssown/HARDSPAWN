@@ -1,15 +1,15 @@
 class_name Arena
 extends Node3D
 ## The Crucible: a compact three-level duel arena around a lava pit.
-## Layout by ChatGPT (approved by Patrik). Look matches Patrik's concept image
-## (docs/concept_target.jpg): black void, black grid floor, grey blocks with thin
-## glowing edge lines, golden jump pads and a blazing lava pit.
+## Layout by ChatGPT (approved by Patrik). Current lighting target:
+## docs/graphics_reference_2026-10-18.jpg, without the eclipse disk.
 
 const EDGE := 30.0
 const LOWER := 0.0
 const MID := 5.0
 const TOP := 10.0
 const BLOCK_SHADER := preload("res://shaders/block.gdshader")
+const SKY_SHADER := preload("res://shaders/arena_sky.gdshader")
 const GOLD := Color(1.0, 0.72, 0.32)
 const LAYER_SOLID := 1 | 4  # 1 = gameplay collision, 4 = navmesh source for bots
 
@@ -74,10 +74,13 @@ func _block_material(base: Color, edge_emission := 1.6, grid := false) -> Shader
 
 
 func _make_materials() -> void:
-	_floor = _block_material(Color(0.2, 0.205, 0.215), 0.8, true)
-	_block = _block_material(Color(0.33, 0.335, 0.345), 1.0)
-	_bridge = _block_material(Color(0.25, 0.255, 0.265), 1.0)
-	_dark = _block_material(Color(0.16, 0.165, 0.175), 0.8)
+	_floor = _block_material(Color(0.2, 0.18, 0.16), 0.8, true)
+	_floor.set_shader_parameter("top_color", Color(0.048, 0.037, 0.031))
+	_floor.set_shader_parameter("grid_color", Color(0.17, 0.14, 0.12))
+	_floor.set_shader_parameter("grid_emission", 0.07)
+	_block = _block_material(Color(0.24, 0.22, 0.21), 1.0)
+	_bridge = _block_material(Color(0.19, 0.17, 0.16), 1.0)
+	_dark = _block_material(Color(0.13, 0.12, 0.11), 0.8)
 	_pit_wall = _block_material(Color(0.42, 0.4, 0.38), 1.0)
 	_pit_wall.set_shader_parameter("edge_color", Color(1.0, 0.62, 0.35))
 	_pit_wall.set_shader_parameter("seam_size", 1.5)
@@ -98,17 +101,21 @@ func _make_materials() -> void:
 
 func _environment() -> void:
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.0, 0.0, 0.0)
+	var sky_material := ShaderMaterial.new()
+	sky_material.shader = SKY_SHADER
+	var sky := Sky.new()
+	sky.sky_material = sky_material
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.62, 0.64, 0.7)
+	env.ambient_light_color = Color(0.75, 0.68, 0.61)
 	env.ambient_light_energy = 0.42
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.tonemap_exposure = 1.05
 	env.glow_enabled = true
-	env.glow_intensity = 0.75
+	env.glow_intensity = 0.86
 	env.glow_strength = 1.0
-	env.glow_bloom = 0.04
+	env.glow_bloom = 0.08
 	env.glow_hdr_threshold = 0.9
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.ssao_enabled = true
@@ -125,14 +132,14 @@ func _environment() -> void:
 	env.fog_height = -50.0
 	env.fog_height_density = 0.2
 	env.fog_sky_affect = 0.0
-	# Thin scattering reveals the distant backlight and monolith shadows without
-	# washing out the compact playable arena.
+	# Thin warm scattering reveals the distant backlight and monolith shadows
+	# while leaving the compact playable arena clear.
 	env.volumetric_fog_enabled = true
-	env.volumetric_fog_density = 0.0005
-	env.volumetric_fog_albedo = Color(0.35, 0.35, 0.35)
+	env.volumetric_fog_density = 0.00075
+	env.volumetric_fog_albedo = Color(0.54, 0.52, 0.47)
 	env.volumetric_fog_ambient_inject = 0.0
 	env.volumetric_fog_gi_inject = 0.0
-	env.volumetric_fog_anisotropy = 0.65
+	env.volumetric_fog_anisotropy = 0.67
 	env.volumetric_fog_length = 300.0
 	env.volumetric_fog_sky_affect = 1.0
 	env.volumetric_fog_temporal_reprojection_enabled = true
@@ -412,10 +419,10 @@ func _lighting() -> void:
 	# Warm light in the distant fog, with no visible sun or circular meshes.
 	var backlight := DirectionalLight3D.new()
 	backlight.name = "DistantBacklight"
-	backlight.position = Vector3(0.0, 300.0, -245.0)
+	backlight.position = Vector3(170.0, 300.0, -245.0)
 	backlight.light_color = Color(1.0, 0.75, 0.55)
-	backlight.light_energy = 0.9
-	backlight.light_volumetric_fog_energy = 6.0
+	backlight.light_energy = 0.7
+	backlight.light_volumetric_fog_energy = 8.0
 	backlight.shadow_enabled = true
 	backlight.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	backlight.directional_shadow_max_distance = 320.0
@@ -426,7 +433,7 @@ func _lighting() -> void:
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-58, -28, 0)
-	sun.light_color = Color(0.92, 0.94, 1.0)
+	sun.light_color = Color(1.0, 0.94, 0.87)
 	sun.light_energy = 0.8
 	sun.light_volumetric_fog_energy = 0.0
 	sun.shadow_enabled = true

@@ -21,8 +21,7 @@ func generate() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = layout_seed
 	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = Color(0.14, 0.145, 0.155)
+	material.albedo_color = Color(0.18, 0.16, 0.14)
 	material.roughness = 1.0
 
 	for i in tower_count:
