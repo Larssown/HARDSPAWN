@@ -117,11 +117,13 @@ func _environment() -> void:
 	env.ssao_power = 1.6
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_DEPTH
-	env.fog_light_color = Color(0.006, 0.007, 0.009)
-	env.fog_density = 0.98
+	env.fog_light_color = Color.BLACK
+	env.fog_density = 1.0
 	env.fog_depth_begin = 95.0
 	env.fog_depth_end = 340.0
 	env.fog_depth_curve = 1.4
+	env.fog_height = -50.0
+	env.fog_height_density = 0.2
 	env.fog_sky_affect = 0.0
 	env.volumetric_fog_enabled = false
 	var world := WorldEnvironment.new()
