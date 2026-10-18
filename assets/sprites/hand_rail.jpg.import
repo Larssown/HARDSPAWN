@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://curnv4tulcrss"
-path="res://.godot/imported/holo_machinegun.jpg-d83437a0e50958d1b6689b990304039a.ctex"
+uid="uid://1ewraxa8groo"
+path="res://.godot/imported/hand_rail.jpg-5bd6312bb378360a52b7b34995cfcfda.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/holo_machinegun.jpg"
-dest_files=["res://.godot/imported/holo_machinegun.jpg-d83437a0e50958d1b6689b990304039a.ctex"]
+source_file="res://assets/sprites/hand_rail.jpg"
+dest_files=["res://.godot/imported/hand_rail.jpg-5bd6312bb378360a52b7b34995cfcfda.ctex"]
 
 [params]
 

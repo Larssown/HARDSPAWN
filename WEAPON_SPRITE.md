@@ -1,13 +1,23 @@
-# Holografiskt 2D-vapen i HARDSPAWN
+# Holografiska händer som förstapersonsvapen
 
-Patriks `weapon1.png` är i själva verket en JPEG. En kopia ligger därför som
-`assets/sprites/holo_machinegun.jpg`. Maskingevärets förstapersonsvy använder
-den bilden; hagelgevär, raketgevär och railgun visar sina tidigare 3D-modeller.
+Patriks fyra filer hette `hand1.png` till `hand4.png`, men innehåller JPEG-data.
+De ligger därför i `assets/sprites/` med `.jpg` som filändelse:
+
+| Bild | Vapen i spelet |
+|---|---|
+| `hand_machinegun.jpg` (hand1) | Maskingevär, startvapen |
+| `hand_shotgun.jpg` (hand2) | Hagelgevär |
+| `hand_rocket.jpg` (hand3) | Raketgevär |
+| `hand_rail.jpg` (hand4) | Railgun |
+
+Alla fyra visas i förstapersonsvyn. Modellerna som ligger på kartan och syns hos
+andra spelare ändras inte. Skottens skada, ammunition, eldhastighet och LAN-flöde
+är samma som tidigare.
 
 ## Nodstruktur
 
 Spelaren skapar noderna automatiskt i `scripts/player.gd` och
-`scripts/viewmodel_overlay.gd`. Under en pågående match syns de i Godots
+`scripts/viewmodel_overlay.gd`. Under en match syns de i Godots
 **Remote**-sceneträd:
 
 ```text
@@ -16,38 +26,25 @@ Player (CharacterBody3D)
 │   └── Camera3D
 │       └── AimRay (RayCast3D)
 └── ViewmodelOverlay (CanvasLayer, lager 5)
-    ├── WeaponViewport (SubViewport; de andra vapnens 3D-modeller)
-    ├── WeaponImage (TextureRect; visar SubViewport)
+    ├── WeaponViewport (SubViewport; pausad 3D-vy för mynningsposition)
+    ├── WeaponImage (TextureRect; dold)
     └── SpriteRoot (Control, hela skärmen)
-        └── WeaponSprite (TextureRect; maskingevärsbilden)
+        └── WeaponSprite (TextureRect; rätt handbild för valt vapen)
 ```
 
-`WeaponSprite` sätts till hela skärmens storlek med `EXPAND_IGNORE_SIZE` och
-`STRETCH_SCALE`. Den har `mouse_filter = IGNORE`, så musen fortsätter skjuta.
-`CanvasItemMaterial` skapas i `scripts/weapon_sprite.gd` och sätts på nodens
-`material` med `blend_mode = BLEND_MODE_ADD`. Svarta pixlar bidrar då inte till
-bilden bakom; de ljusa neonlinjerna adderas ovanpå världen. För att göra samma
-sak i editorn: markera **WeaponSprite → Material → New CanvasItemMaterial →
-Blend Mode → Add**. Någon separat alfamask behövs inte för denna bild.
+`WeaponSprite` fyller skärmen och ignorerar musinmatning. `CanvasItemMaterial`
+skapas i `scripts/weapon_sprite.gd` med `blend_mode = BLEND_MODE_ADD`. Svarta
+pixlar bidrar då inte till bilden bakom; de ljusa neonlinjerna adderas ovanpå
+spelvärlden. I Godots editor motsvarar detta **WeaponSprite → Material → New
+CanvasItemMaterial → Blend Mode → Add**.
 
-## Animation och skott
+## Rörelse och skott
 
-`weapon_sprite.gd` läser spelarens gånghastighet för en liten åttarörelse,
-musens förflyttning för svaj och ett `kick()`-anrop för rekyl. `flash()` ger en
-kort ljuspuls. `viewmodel_overlay.gd` växlar mellan spriten och den tidigare
-3D-vyn när spelaren byter vapen. När spriten visas pausas den extra 3D-vyn,
-vilket sparar renderingstid.
+`weapon_sprite.gd` använder spelarens hastighet för en liten åttarörelse och
+musens rörelse för svaj. `kick()` ger en snabb rekyl med mjuk återgång och
+`flash()` ger en kort ljuspuls. `show_weapon()` byter bild vid vapenbyte.
 
-Vänsterklick går fortfarande via `Player._fire()`: ammo, eldhastighet, skada,
-träffbekräftelse och nätverk påverkas inte av bildens placering. Den nya
-`AimRay` sitter i mitten av `Camera3D` och används för exakta skott med railgun
-och hagelgevärets mittpellet. Övriga pellets och maskingevärets spridning
-fortsätter använda separata fysikstrålar från samma kamerariktning. Raketvapen
-använder projektiler som tidigare.
-
-## Fler 2D-vapen senare
-
-Lägg nya bilder i `assets/sprites/` och välj rätt bild i `WeaponSprite` för
-respektive vapen. Koppla sedan vapentypen i `ViewmodelOverlay.show_weapon()`.
-Bilder med svart bakgrund kan använda samma additiva material; genomskinliga
-PNG-bilder kan vid behov använda vanlig `Mix`-blandning.
+Vänsterklick går genom `Player._fire()`. `AimRay` sitter i mitten av `Camera3D`
+för exakta skott med railgun och hagelgevärets mittpellet. Andra pellets och
+maskingevärets spridning använder egna fysikstrålar. Raketgevärets projektil
+fungerar som tidigare.

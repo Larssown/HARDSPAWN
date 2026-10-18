@@ -1,9 +1,14 @@
 class_name WeaponSprite
 extends TextureRect
-## Local first-person sprite. The black JPEG pixels contribute nothing in ADD
-## blend mode; only its cyan/orange light is drawn over the 3D arena.
+## Local first-person hand sprite. Black JPEG pixels contribute nothing in ADD
+## blend mode; only the cyan/orange hologram is drawn over the 3D arena.
 
-const MACHINEGUN_IMAGE := preload("res://assets/sprites/holo_machinegun.jpg")
+const HAND_IMAGES := [
+	preload("res://assets/sprites/hand_machinegun.jpg"),
+	preload("res://assets/sprites/hand_shotgun.jpg"),
+	preload("res://assets/sprites/hand_rocket.jpg"),
+	preload("res://assets/sprites/hand_rail.jpg"),
+]
 
 var player: Player
 var _look_delta := Vector2.ZERO
@@ -16,7 +21,7 @@ var _flash := 0.0
 
 func _ready() -> void:
 	name = "WeaponSprite"
-	texture = MACHINEGUN_IMAGE
+	texture = HAND_IMAGES[Weapons.MG]
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	stretch_mode = TextureRect.STRETCH_SCALE
@@ -29,8 +34,9 @@ func _ready() -> void:
 
 
 func show_weapon(weapon_id: int) -> void:
-	visible = weapon_id == Weapons.MG
+	visible = weapon_id >= 0 and weapon_id < HAND_IMAGES.size()
 	if visible:
+		texture = HAND_IMAGES[weapon_id]
 		_recoil = Vector2.ZERO
 		_switch = 1.0
 

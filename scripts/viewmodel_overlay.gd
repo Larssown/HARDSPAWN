@@ -66,27 +66,18 @@ func _ready() -> void:
 
 func show_weapon(weapon_id: int) -> void:
 	model.show_weapon(weapon_id)
-	var sprite_active := weapon_id == Weapons.MG
 	_sprite.show_weapon(weapon_id)
-	_weapon_image.visible = not sprite_active
-	_viewport.render_target_update_mode = (SubViewport.UPDATE_DISABLED if sprite_active
-		else SubViewport.UPDATE_ALWAYS)
-	if sprite_active:
-		model.models[Weapons.MG].visible = false
+	_weapon_image.visible = false
+	_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	model.models[weapon_id].visible = false
 
 
 func kick(amount: float) -> void:
-	if player.weapon == Weapons.MG:
-		_sprite.kick(amount)
-	else:
-		model.kick(amount)
+	_sprite.kick(amount)
 
 
 func flash() -> void:
-	if player.weapon == Weapons.MG:
-		_sprite.flash()
-	else:
-		model.flash()
+	_sprite.flash()
 
 
 func _process(_delta: float) -> void:
