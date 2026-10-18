@@ -17,6 +17,7 @@ var _kick := 0.0
 var _switch := 0.0
 var _sway := Vector2.ZERO
 var _bob_t := 0.0
+var _look_delta := Vector2.ZERO
 func _ready() -> void:
 	position = REST
 	scale = Vector3.ONE * 0.8
@@ -64,6 +65,10 @@ func kick(amount: float) -> void:
 	_kick = minf(_kick + amount, 1.6)
 
 
+func add_look_delta(motion: Vector2) -> void:
+	_look_delta += motion
+
+
 func flash() -> void:
 	_flash_t = 0.085 if player.weapon == Weapons.SHOTGUN else 0.07 if player.weapon == Weapons.RAIL else 0.05
 	_flash_light.light_energy = 6.0 if player.weapon == Weapons.SHOTGUN else 5.0
@@ -81,8 +86,8 @@ func _process(delta: float) -> void:
 	_kick = lerpf(_kick, 0.0, minf(delta * 9.0, 1.0))
 	_switch = maxf(_switch - delta * 7.0, 0.0)
 
-	var target_sway := Vector2(-player.mouse_delta.x, player.mouse_delta.y) * 0.0006
-	player.mouse_delta = Vector2.ZERO
+	var target_sway := Vector2(-_look_delta.x, _look_delta.y) * 0.0006
+	_look_delta = Vector2.ZERO
 	target_sway = target_sway.limit_length(0.06)
 	_sway = _sway.lerp(target_sway, minf(delta * 10.0, 1.0))
 

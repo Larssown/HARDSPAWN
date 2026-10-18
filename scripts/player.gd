@@ -42,6 +42,7 @@ var in_fire := false
 var brain: BotBrain = null
 var head: Node3D
 var camera: Camera3D = null
+var aim_ray: RayCast3D = null
 var viewmodel: Viewmodel = null
 var viewmodel_overlay: ViewmodelOverlay = null
 var body_root: Node3D
@@ -97,6 +98,13 @@ func _ready() -> void:
 		camera.far = 400.0
 		head.add_child(camera)
 		camera.current = true
+		aim_ray = RayCast3D.new()
+		aim_ray.name = "AimRay"
+		aim_ray.target_position = Vector3(0, 0, -400)
+		aim_ray.collision_mask = 3
+		aim_ray.enabled = false # Updated only for a straight shot.
+		camera.add_child(aim_ray)
+		aim_ray.add_exception(self)
 		viewmodel_overlay = ViewmodelOverlay.new()
 		viewmodel_overlay.player = self
 		add_child(viewmodel_overlay)
@@ -235,8 +243,8 @@ func select_weapon(i: int) -> void:
 	weapon = i
 	cooldown = maxf(cooldown, 0.15)
 	_update_gun_color()
-	if viewmodel:
-		viewmodel.show_weapon(i)
+	if viewmodel_overlay:
+		viewmodel_overlay.show_weapon(i)
 		Sfx.play_2d("switch", -8.0)
 
 
@@ -253,8 +261,8 @@ func grant_weapon(i: int) -> void:
 	weapon = i
 	cooldown = maxf(cooldown, 0.15)
 	_update_gun_color()
-	if viewmodel:
-		viewmodel.show_weapon(i)
+	if viewmodel_overlay:
+		viewmodel_overlay.show_weapon(i)
 
 
 func add_ammo(i: int, amount: int) -> void:
@@ -270,8 +278,8 @@ func set_loadout(mask: int, active_weapon: int, remaining := PackedInt32Array())
 		ammo = remaining.duplicate()
 	last_weapon = Weapons.MG
 	_update_gun_color()
-	if viewmodel:
-		viewmodel.show_weapon(weapon)
+	if viewmodel_overlay:
+		viewmodel_overlay.show_weapon(weapon)
 
 
 func _cycle_weapon(step: int) -> void:
@@ -411,9 +419,9 @@ func _fire() -> void:
 	var origin := head.global_position
 	var aim := -head.global_basis.z
 	var muzzle := get_muzzle_position()
-	if viewmodel:
-		viewmodel.kick(w.kick)
-		viewmodel.flash()
+	if viewmodel_overlay:
+		viewmodel_overlay.kick(w.kick)
+		viewmodel_overlay.flash()
 		_shake = maxf(_shake, 0.05 * float(w.kick))
 	if w.type == "rocket":
 		Game.world.fire_rocket(peer_id, origin + aim * 0.3, aim)
@@ -437,8 +445,17 @@ func _fire() -> void:
 			var a := randf() * TAU
 			var r := sqrt(randf()) * spread
 			dir = (aim + right * cos(a) * r + up * sin(a) * r).normalized()
-		var q := PhysicsRayQueryParameters3D.create(origin, origin + dir * max_range, 3, [get_rid()])
-		var hit := space.intersect_ray(q)
+		var hit: Dictionary = {}
+		if aim_ray and i == 0 and (spread == 0.0 or weapon == Weapons.SHOTGUN):
+			# The camera-centred RayCast3D handles exact shots. Spread pellets
+			# still use direct queries so each can have its own direction.
+			aim_ray.target_position = Vector3(0, 0, -max_range)
+			aim_ray.force_raycast_update()
+			if aim_ray.is_colliding():
+				hit = {"position": aim_ray.get_collision_point(), "collider": aim_ray.get_collider()}
+		else:
+			var q := PhysicsRayQueryParameters3D.create(origin, origin + dir * max_range, 3, [get_rid()])
+			hit = space.intersect_ray(q)
 		if hit.is_empty():
 			ends.append(origin + dir * max_range)
 			continue
@@ -507,6 +524,8 @@ func die() -> void:
 	Sfx.play_3d("death", global_position + Vector3(0, 1, 0))
 	if viewmodel:
 		viewmodel.visible = false
+	if viewmodel_overlay:
+		viewmodel_overlay.visible = false
 
 
 func set_dead_silent() -> void:
@@ -514,6 +533,8 @@ func set_dead_silent() -> void:
 	collision_layer = 0
 	body_root.visible = false
 	name_label.visible = false
+	if viewmodel_overlay:
+		viewmodel_overlay.visible = false
 
 
 func respawn(pos: Vector3, new_yaw: float) -> void:
@@ -532,9 +553,11 @@ func respawn(pos: Vector3, new_yaw: float) -> void:
 	teleport(pos, new_yaw)
 	body_root.visible = not is_local_human
 	name_label.visible = not is_local_human
+	if viewmodel_overlay:
+		viewmodel_overlay.visible = true
+		viewmodel_overlay.show_weapon(weapon)
 	if viewmodel:
 		viewmodel.visible = true
-		viewmodel.show_weapon(weapon)
 	if camera:
 		camera.position = Vector3.ZERO
 		camera.rotation = Vector3.ZERO
@@ -590,7 +613,7 @@ func _update_camera(delta: float) -> void:
 		target_fov = 35.0 if weapon == Weapons.RAIL else base_fov * 0.75
 	camera.fov = lerpf(camera.fov, target_fov, minf(delta * 12.0, 1.0))
 	camera.rotation.z = lerpf(camera.rotation.z, -in_move.x * 0.012, minf(delta * 8.0, 1.0))
-	viewmodel.visible = not (zooming and weapon == Weapons.RAIL)
+	viewmodel_overlay.visible = not (zooming and weapon == Weapons.RAIL)
 
 
 func add_shake(amount: float) -> void:

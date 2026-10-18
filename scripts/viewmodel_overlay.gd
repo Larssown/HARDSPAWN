@@ -6,6 +6,8 @@ var player: Player
 var model: Viewmodel
 var weapon_camera: Camera3D
 var _viewport: SubViewport
+var _weapon_image: TextureRect
+var _sprite: WeaponSprite
 
 
 func _ready() -> void:
@@ -43,19 +45,57 @@ func _ready() -> void:
 	model.player = player
 	weapon_camera.add_child(model)
 
-	var image := TextureRect.new()
-	image.name = "WeaponImage"
-	image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	image.stretch_mode = TextureRect.STRETCH_SCALE
-	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	image.texture = _viewport.get_texture()
-	add_child(image)
+	_weapon_image = TextureRect.new()
+	_weapon_image.name = "WeaponImage"
+	_weapon_image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_weapon_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_weapon_image.stretch_mode = TextureRect.STRETCH_SCALE
+	_weapon_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_weapon_image.texture = _viewport.get_texture()
+	add_child(_weapon_image)
+	var sprite_root := Control.new()
+	sprite_root.name = "SpriteRoot"
+	sprite_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	sprite_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(sprite_root)
+	_sprite = WeaponSprite.new()
+	_sprite.player = player
+	sprite_root.add_child(_sprite)
+	show_weapon(player.weapon)
+
+
+func show_weapon(weapon_id: int) -> void:
+	model.show_weapon(weapon_id)
+	var sprite_active := weapon_id == Weapons.MG
+	_sprite.show_weapon(weapon_id)
+	_weapon_image.visible = not sprite_active
+	_viewport.render_target_update_mode = (SubViewport.UPDATE_DISABLED if sprite_active
+		else SubViewport.UPDATE_ALWAYS)
+	if sprite_active:
+		model.models[Weapons.MG].visible = false
+
+
+func kick(amount: float) -> void:
+	if player.weapon == Weapons.MG:
+		_sprite.kick(amount)
+	else:
+		model.kick(amount)
+
+
+func flash() -> void:
+	if player.weapon == Weapons.MG:
+		_sprite.flash()
+	else:
+		model.flash()
 
 
 func _process(_delta: float) -> void:
 	weapon_camera.fov = player.camera.fov
 	weapon_camera.rotation.z = player.camera.rotation.z
+	var look_delta := player.mouse_delta
+	player.mouse_delta = Vector2.ZERO
+	model.add_look_delta(look_delta)
+	_sprite.add_look_delta(look_delta)
 
 
 func _resize() -> void:
