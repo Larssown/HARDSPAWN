@@ -12,6 +12,8 @@ func _run() -> void:
 	if Game.host_game(17777) != OK:
 		_fail("Could not start local host")
 		return
+	# Pickup and jump-pad checks run after the match-start lock.
+	Game.countdown_remaining = 0.0
 	await get_tree().create_timer(1.0).timeout
 	var world: World = Game.world
 	var player: Player = world.get_player(1)

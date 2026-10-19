@@ -13,6 +13,7 @@ const AIR_CAP := 0.9        # low cap + high accel = strafe jumping works
 const JUMP_VELOCITY := 7.2
 const GRAVITY := 20.0
 const EYE_HEIGHT := 1.6
+const HEADSHOT_MIN_Y := 1.42
 
 var peer_id := 0
 var is_bot := false
@@ -211,15 +212,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotation.y = yaw
 		head.rotation.x = pitch
 		mouse_delta += mm.relative
-	elif event.is_action_pressed("weapon_next"):
+	elif Game.can_act() and event.is_action_pressed("weapon_next"):
 		_cycle_weapon(1)
-	elif event.is_action_pressed("weapon_prev"):
+	elif Game.can_act() and event.is_action_pressed("weapon_prev"):
 		_cycle_weapon(-1)
 
 
 func _read_human_input() -> void:
 	var captured := Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-	if not captured:
+	if not captured or not Game.can_act():
 		in_move = Vector2.ZERO
 		in_jump = false
 		in_fire = false
@@ -297,12 +298,15 @@ func _physics_process(delta: float) -> void:
 		if not dead:
 			if is_local_human:
 				_read_human_input()
-			elif brain:
+			elif brain and Game.can_act():
 				brain.think(delta)
 			rotation.y = yaw
 			head.rotation.x = pitch
-			_move(delta)
-			_weapons(delta)
+			if Game.can_act():
+				_move(delta)
+				_weapons(delta)
+			else:
+				velocity = Vector3.ZERO
 		for t in Game.targets():
 			_net_state.rpc_id(t, global_position, velocity, yaw, pitch, weapon, ammo, spawn_count)
 	else:
@@ -380,7 +384,7 @@ func _air_accelerate(dir: Vector3, wish_speed: float, delta: float) -> void:
 
 
 func can_use_jump_pad() -> bool:
-	return _pad_cooldown <= 0.0 and not dead
+	return _pad_cooldown <= 0.0 and not dead and Game.can_act()
 
 
 func launch(vel: Vector3) -> void:
@@ -408,6 +412,8 @@ func _weapons(delta: float) -> void:
 
 
 func _fire() -> void:
+	if not Game.can_act():
+		return
 	var w: Dictionary = Weapons.LIST[weapon]
 	if ammo[weapon] <= 0:
 		cooldown = 0.25
@@ -462,17 +468,20 @@ func _fire() -> void:
 		ends.append(hit.position)
 		var victim := hit.collider as Player
 		if victim and not victim.dead:
-			dmg_by_victim[victim.peer_id] = dmg_by_victim.get(victim.peer_id, 0.0) + float(w.damage)
+			var previous: Dictionary = dmg_by_victim.get(victim.peer_id, {"damage": 0.0, "headshot": false})
+			previous.damage += float(w.damage)
+			previous.headshot = previous.headshot or victim.to_local(hit.position).y >= HEADSHOT_MIN_Y
+			dmg_by_victim[victim.peer_id] = previous
 	for vid in dmg_by_victim:
-		_deal(vid, dmg_by_victim[vid])
+		_deal(vid, dmg_by_victim[vid].damage, dmg_by_victim[vid].headshot)
 	Game.world.shot_fx(peer_id, weapon, muzzle, ends)
 
 
-func _deal(victim_id: int, dmg: float) -> void:
+func _deal(victim_id: int, dmg: float, headshot: bool) -> void:
 	if is_bot:
-		Game.server_damage(victim_id, peer_id, dmg, weapon)
+		Game.server_damage(victim_id, peer_id, dmg, weapon, Vector3.ZERO, headshot)
 	else:
-		Game.report_hit(victim_id, dmg, weapon)
+		Game.report_hit(victim_id, dmg, weapon, headshot)
 
 
 func get_muzzle_position() -> Vector3:

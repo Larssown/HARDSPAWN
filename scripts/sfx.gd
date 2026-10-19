@@ -6,6 +6,10 @@ const NAMES := ["mg", "shotgun", "rocket_fire", "explosion", "rail", "jump", "la
 	"respawn", "match_end", "minute"]
 
 var streams := {}
+const ANNOUNCER_NAMES := ["321", "terminated", "first_blood", "1minute", "30seconds",
+	"dualelimination", "tripple", "overkill", "insanity", "monsterkill"]
+var _announcer: AudioStreamPlayer
+var _announcer_queue: Array[String] = []
 
 
 func _ready() -> void:
@@ -14,6 +18,37 @@ func _ready() -> void:
 		var path := "res://assets/sfx/%s.wav" % n
 		if ResourceLoader.exists(path):
 			streams[n] = load(path)
+	for n in ANNOUNCER_NAMES:
+		var path := "res://assets/sfx/announcer/%s.ogg" % n
+		if ResourceLoader.exists(path):
+			streams[n] = load(path)
+	_announcer = AudioStreamPlayer.new()
+	_announcer.name = "Announcer"
+	add_child(_announcer)
+	_announcer.finished.connect(_play_next_announcement)
+
+
+func start_announcer(sound: String, from_position := 0.0) -> void:
+	_announcer_queue.clear()
+	_announcer.stop()
+	if streams.has(sound):
+		_announcer.stream = streams[sound]
+		_announcer.play(from_position)
+
+
+func queue_announcer(sound: String) -> void:
+	if not streams.has(sound):
+		return
+	_announcer_queue.append(sound)
+	if not _announcer.playing:
+		_play_next_announcement()
+
+
+func _play_next_announcement() -> void:
+	if _announcer_queue.is_empty():
+		return
+	_announcer.stream = streams[_announcer_queue.pop_front()]
+	_announcer.play()
 
 
 func play_2d(sound: String, vol_db := 0.0, pitch := 1.0) -> void:

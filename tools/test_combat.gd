@@ -11,6 +11,8 @@ func _run() -> void:
 	if Game.host_game() != OK:
 		_fail("Could not start local host")
 		return
+	# This suite tests weapons after the match-start countdown has finished.
+	Game.countdown_remaining = 0.0
 	await get_tree().physics_frame
 	Game._add_bot()
 	await get_tree().physics_frame

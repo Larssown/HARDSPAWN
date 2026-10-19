@@ -140,6 +140,10 @@ func _ready() -> void:
 	Game.players_changed.connect(_refresh_scoreboard)
 	Game.match_ended.connect(_on_match_ended)
 	Game.match_restarted.connect(_on_match_restarted)
+	Game.countdown_finished.connect(_on_countdown_finished)
+	_prev_time = Game.time_left
+	if Game.countdown_remaining > 0.0:
+		_show_center("GET READY", Color(1.0, 0.75, 0.4), Game.countdown_remaining)
 
 
 func bind_player(p: Player) -> void:
@@ -351,7 +355,11 @@ func _on_match_ended() -> void:
 func _on_match_restarted() -> void:
 	score_title.text = "SCOREBOARD"
 	score_title.add_theme_color_override("font_color", Color(0.2, 0.8, 1.0))
-	_prev_time = 9999.0
+	_prev_time = Game.time_left
+	_show_center("GET READY", Color(1.0, 0.75, 0.4), Game.countdown_remaining)
+
+
+func _on_countdown_finished() -> void:
 	_show_center("FIGHT!", Color(1.0, 0.3, 0.3))
 
 
@@ -364,7 +372,6 @@ func _process(delta: float) -> void:
 	lbl_timer.add_theme_color_override("font_color", Color(1, 0.35, 0.3) if t <= 30 else Color.WHITE)
 	if Game.time_left < 60.0 and _prev_time >= 60.0 and not Game.match_over:
 		_show_center("1 MINUTE REMAINING", Color(1, 0.6, 0.2))
-		Sfx.play_2d("minute")
 	_prev_time = Game.time_left
 
 	if _center_t > 0.0:

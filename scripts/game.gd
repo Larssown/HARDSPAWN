@@ -8,12 +8,14 @@ signal kill_event(victim_id: int, killer_id: int, weapon: int)
 signal hit_confirmed(damage: float)
 signal match_ended
 signal match_restarted
+signal countdown_finished
 signal menu_status(text: String)
 
 const PORT := 7777
 const DISCOVERY_PORT := 7778
 const MAX_TOTAL := 8
 const RESPAWN_TIME := 2.5
+const START_COUNTDOWN := 3.0
 const END_SCREEN_TIME := 12.0
 const SELF_DAMAGE_SCALE := 0.35
 const SPLASH_RADIUS := 4.5
@@ -33,6 +35,7 @@ var match_cfg := {"bots": 3, "difficulty": 1, "time_limit": 600}
 ## id -> {name, kills, deaths, bot, color}. Bots have negative ids.
 var players: Dictionary = {}
 var time_left := 0.0
+var countdown_remaining := 0.0
 var match_over := false
 var world: World = null
 var menu_message := ""
@@ -48,6 +51,9 @@ var _sync_t := 0.0
 var _decay_t := 0.0
 var _next_bot := 0
 var _quit_after := -1.0
+var _first_blood_done := false
+var _kill_streaks: Dictionary = {}
+var _last_match_time := 0.0
 
 
 func _ready() -> void:
@@ -71,9 +77,20 @@ func _process(delta: float) -> void:
 	if world == null:
 		return
 	if not match_over:
-		time_left = maxf(time_left - delta, 0.0)
+		if countdown_remaining > 0.0:
+			countdown_remaining = maxf(countdown_remaining - delta, 0.0)
+			if countdown_remaining <= 0.0:
+				countdown_finished.emit()
+		else:
+			time_left = maxf(time_left - delta, 0.0)
 	if not multiplayer.is_server():
 		return
+	if not match_over and countdown_remaining <= 0.0:
+		if _last_match_time > 60.0 and time_left <= 60.0:
+			_announce.rpc("1minute")
+		if _last_match_time > 30.0 and time_left <= 30.0:
+			_announce.rpc("30seconds")
+		_last_match_time = time_left
 	_broadcast_t -= delta
 	if _broadcast_t <= 0.0:
 		_broadcast_t = 1.0
@@ -81,7 +98,7 @@ func _process(delta: float) -> void:
 	_sync_t -= delta
 	if _sync_t <= 0.0:
 		_sync_t = 2.0
-		_time_sync.rpc(time_left)
+		_time_sync.rpc(time_left, countdown_remaining)
 	_decay_t -= delta
 	if _decay_t <= 0.0:
 		_decay_t = 1.0
@@ -212,10 +229,13 @@ func host_game(port := PORT) -> int:
 	_next_bot = 0
 	match_over = false
 	time_left = float(match_cfg.time_limit)
+	countdown_remaining = START_COUNTDOWN
+	_reset_announcements()
 	_create_world()
 	_add_player(1, settings.name, false)
 	for i in int(match_cfg.bots):
 		_add_bot()
+	Sfx.start_announcer("321")
 	_broadcaster = PacketPeerUDP.new()
 	_broadcaster.set_broadcast_enabled(true)
 	return OK
@@ -240,6 +260,7 @@ func leave_game(message := "") -> void:
 	players.clear()
 	ready_peers.clear()
 	world = null
+	countdown_remaining = 0.0
 	menu_message = message
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().change_scene_to_file("res://scenes/menu.tscn")
@@ -305,6 +326,7 @@ func _on_peer_disconnected(id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	ready_peers.erase(id)
+	_kill_streaks.erase(id)
 	_set_ready_peers.rpc(ready_peers)
 	if players.has(id):
 		_remove_player.rpc(id)
@@ -382,16 +404,17 @@ func _register(pname: String) -> void:
 		snapshot[pid] = {"info": players[pid], "pos": p.global_position, "yaw": p.yaw,
 			"dead": p.dead, "hp": p.health, "armor": p.armor,
 			"owned_weapons": p.owned_weapons, "weapon": p.weapon, "ammo": p.ammo}
-	_client_init.rpc_id(id, match_cfg, time_left, match_over, snapshot, world.get_pickup_states())
+	_client_init.rpc_id(id, match_cfg, time_left, countdown_remaining, match_over, snapshot, world.get_pickup_states())
 	_add_player(id, pname, false)
 	ready_peers.append(id)
 	_set_ready_peers.rpc(ready_peers)
 
 
 @rpc("authority", "reliable")
-func _client_init(cfg: Dictionary, t: float, over: bool, snapshot: Dictionary, pickup_states: Array) -> void:
+func _client_init(cfg: Dictionary, t: float, countdown: float, over: bool, snapshot: Dictionary, pickup_states: Array) -> void:
 	match_cfg = cfg
 	time_left = t
+	countdown_remaining = countdown
 	match_over = over
 	players.clear()
 	_create_world()
@@ -407,6 +430,8 @@ func _client_init(cfg: Dictionary, t: float, over: bool, snapshot: Dictionary, p
 			p.set_dead_silent()
 	world.set_pickup_states(pickup_states)
 	players_changed.emit()
+	if countdown_remaining > 0.0:
+		Sfx.start_announcer("321", START_COUNTDOWN - countdown_remaining)
 
 
 @rpc("authority", "call_local", "reliable")
@@ -420,6 +445,7 @@ func _spawn_player(id: int, info: Dictionary, pos: Vector3, yaw: float) -> void:
 @rpc("authority", "call_local", "reliable")
 func _remove_player(id: int) -> void:
 	players.erase(id)
+	_kill_streaks.erase(id)
 	if world:
 		world.remove_player(id)
 	players_changed.emit()
@@ -428,17 +454,17 @@ func _remove_player(id: int) -> void:
 # --- Damage & kills (host only) ----------------------------------------------
 
 ## Called by a human shooter on their own machine.
-func report_hit(victim_id: int, dmg: float, weapon: int) -> void:
+func report_hit(victim_id: int, dmg: float, weapon: int, headshot := false) -> void:
 	if multiplayer.is_server():
-		server_damage(victim_id, multiplayer.get_unique_id(), dmg, weapon)
+		server_damage(victim_id, multiplayer.get_unique_id(), dmg, weapon, Vector3.ZERO, headshot)
 	else:
-		_report_hit.rpc_id(1, victim_id, dmg, weapon)
+		_report_hit.rpc_id(1, victim_id, dmg, weapon, headshot)
 
 
 @rpc("any_peer", "reliable")
-func _report_hit(victim_id: int, dmg: float, weapon: int) -> void:
+func _report_hit(victim_id: int, dmg: float, weapon: int, headshot: bool) -> void:
 	if multiplayer.is_server():
-		server_damage(victim_id, multiplayer.get_remote_sender_id(), clampf(dmg, 0.0, 999.0), weapon)
+		server_damage(victim_id, multiplayer.get_remote_sender_id(), clampf(dmg, 0.0, 999.0), weapon, Vector3.ZERO, headshot)
 
 
 ## Called by whoever owns a real rocket when it explodes.
@@ -485,8 +511,11 @@ func _server_explosion(owner_id: int, pos: Vector3, direct_id: int, rocket_name:
 			server_damage(pid, owner_id, dmg, Weapons.ROCKET, knock)
 
 
-func server_damage(victim_id: int, attacker_id: int, dmg: float, weapon: int, knock := Vector3.ZERO) -> void:
+func server_damage(victim_id: int, attacker_id: int, dmg: float, weapon: int,
+		knock := Vector3.ZERO, headshot := false) -> void:
 	if world == null or not multiplayer.is_server():
+		return
+	if countdown_remaining > 0.0 and victim_id != attacker_id:
 		return
 	var v := world.get_player(victim_id)
 	if v == null or v.dead:
@@ -511,7 +540,49 @@ func server_damage(victim_id: int, attacker_id: int, dmg: float, weapon: int, kn
 	_vitals.rpc(victim_id, new_hp, new_armor, attacker_id)
 	if new_hp <= 0.0:
 		_died.rpc(victim_id, attacker_id, weapon)
+		_record_kill(victim_id, attacker_id, headshot)
 		get_tree().create_timer(RESPAWN_TIME).timeout.connect(_server_respawn.bind(victim_id))
+
+
+func _record_kill(victim_id: int, killer_id: int, headshot: bool) -> void:
+	_kill_streaks[victim_id] = 0
+	if killer_id == victim_id or not players.has(killer_id):
+		return
+	var streak: int = int(_kill_streaks.get(killer_id, 0)) + 1
+	_kill_streaks[killer_id] = streak
+	if not _first_blood_done:
+		_first_blood_done = true
+		_announce.rpc("first_blood")
+	if killer_id <= 0:
+		return
+	if headshot:
+		_announce_for_killer(killer_id, "terminated")
+	var streak_sounds := {2: "dualelimination", 3: "tripple", 4: "overkill",
+		5: "insanity", 6: "monsterkill"}
+	if streak_sounds.has(streak):
+		_announce_for_killer(killer_id, streak_sounds[streak])
+
+
+func _announce_for_killer(killer_id: int, sound: String) -> void:
+	if killer_id == multiplayer.get_unique_id():
+		_announce(sound)
+	elif ready_peers.has(killer_id):
+		_announce.rpc_id(killer_id, sound)
+
+
+@rpc("authority", "call_local", "reliable")
+func _announce(sound: String) -> void:
+	Sfx.queue_announcer(sound)
+
+
+func _reset_announcements() -> void:
+	_first_blood_done = false
+	_kill_streaks.clear()
+	_last_match_time = time_left
+
+
+func can_act() -> bool:
+	return world != null and not match_over and countdown_remaining <= 0.0
 
 
 func server_set_vitals(id: int, hp: float, ar: float) -> void:
@@ -590,8 +661,12 @@ func _respawn(id: int, pos: Vector3, yaw: float) -> void:
 # --- Match flow ---------------------------------------------------------------
 
 @rpc("authority", "unreliable")
-func _time_sync(t: float) -> void:
+func _time_sync(t: float, countdown: float) -> void:
 	time_left = t
+	var was_counting := countdown_remaining > 0.0
+	countdown_remaining = countdown
+	if was_counting and countdown_remaining <= 0.0:
+		countdown_finished.emit()
 
 
 @rpc("authority", "call_local", "reliable")
@@ -606,6 +681,10 @@ func _end_match() -> void:
 func _restart_match() -> void:
 	match_over = false
 	time_left = float(match_cfg.time_limit)
+	countdown_remaining = START_COUNTDOWN
+	if multiplayer.is_server():
+		_reset_announcements()
+	Sfx.start_announcer("321")
 	for id in players:
 		players[id].kills = 0
 		players[id].deaths = 0
