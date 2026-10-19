@@ -12,7 +12,7 @@ config_version=5
 
 config/name="HARDSPAWN"
 config/description="LAN arena deathmatch"
-run/main_scene="res://scenes/menu.tscn"
+run/main_scene="res://scenes/intro.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://assets/branding/hardspawn_emblem.png"
 
