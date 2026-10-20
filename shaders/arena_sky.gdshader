@@ -1,16 +1,20 @@
 shader_type sky;
 
-// Broad, soft backlight with no sun disk or other circular object.
-uniform vec3 void_color : source_color = vec3(0.008, 0.006, 0.005);
-uniform vec3 warm_haze : source_color = vec3(0.24, 0.13, 0.07);
-uniform vec3 pale_light : source_color = vec3(2.3, 1.95, 1.55);
+// Bright, hazy "heavenly" overcast sky: milky white at the horizon, soft blue-grey
+// above, and a broad warm glow where the hidden sun sits behind the haze.
+uniform vec3 horizon_color : source_color = vec3(0.93, 0.93, 0.92);
+uniform vec3 zenith_color : source_color = vec3(0.74, 0.77, 0.81);
+uniform vec3 below_color : source_color = vec3(0.90, 0.90, 0.89);
+uniform vec3 glow_color : source_color = vec3(1.0, 0.96, 0.88);
+uniform float brightness = 1.05;
 
 void sky() {
-	vec3 view_dir = normalize(EYEDIR);
-	vec3 light_dir = normalize(vec3(0.42, 0.58, -0.70));
-	float facing = max(dot(view_dir, light_dir), 0.0);
-	float broad = pow(facing, 2.5);
-	float glow = pow(facing, 8.0);
-	float elevation = smoothstep(-0.18, 0.62, view_dir.y);
-	COLOR = void_color + warm_haze * broad * elevation + pale_light * glow * elevation;
+	vec3 dir = normalize(EYEDIR);
+	float up = clamp(dir.y, -1.0, 1.0);
+	vec3 col = mix(horizon_color, zenith_color, pow(smoothstep(0.0, 1.0, up), 0.7));
+	col = mix(col, below_color, smoothstep(0.0, -0.25, up));
+	vec3 sun_dir = normalize(LIGHT0_DIRECTION);
+	float facing = max(dot(dir, sun_dir), 0.0);
+	col += glow_color * (pow(facing, 3.0) * 0.35 + pow(facing, 24.0) * 0.45);
+	COLOR = col * brightness;
 }

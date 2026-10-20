@@ -11,6 +11,7 @@ extends Node3D
 @export var top_range := Vector2(50.0, 300.0)
 @export var base_y := -1000.0
 @export var layout_seed := 4719
+@export var tint := Color(0.78, 0.78, 0.77)
 
 
 func _ready() -> void:
@@ -21,7 +22,7 @@ func generate() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = layout_seed
 	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.18, 0.16, 0.14)
+	material.albedo_color = tint
 	material.roughness = 1.0
 
 	for i in tower_count:

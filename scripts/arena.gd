@@ -1,8 +1,8 @@
 class_name Arena
 extends Node3D
 ## The Crucible: a compact three-level duel arena around a lava pit.
-## Layout by ChatGPT (approved by Patrik). Current lighting target:
-## docs/graphics_reference_2026-10-18.jpg, without the eclipse disk.
+## Layout by ChatGPT (approved by Patrik). Current look target (2026-10-20):
+## docs/concept_white_dust.jpg — white cracked concrete, bright hazy sky, dusty fog.
 
 const EDGE := 30.0
 const LOWER := 0.0
@@ -73,18 +73,26 @@ func _block_material(base: Color, edge_emission := 1.6, grid := false) -> Shader
 	return m
 
 
+func _concrete(base: Color, edge_emission: float, cracks: float, scale: float) -> ShaderMaterial:
+	var m := _block_material(base, edge_emission)
+	m.set_shader_parameter("edge_color", Color(1.0, 1.0, 1.0))
+	m.set_shader_parameter("crack_amount", cracks)
+	m.set_shader_parameter("crack_scale", scale)
+	m.set_shader_parameter("seam_strength", 0.0)
+	m.set_shader_parameter("base_variation", 0.04)
+	m.set_shader_parameter("bottom_shade", 0.18)
+	m.set_shader_parameter("roughness_value", 0.92)
+	return m
+
+
 func _make_materials() -> void:
-	_floor = _block_material(Color(0.2, 0.18, 0.16), 0.8, true)
-	_floor.set_shader_parameter("top_color", Color(0.048, 0.037, 0.031))
-	_floor.set_shader_parameter("grid_color", Color(0.17, 0.14, 0.12))
-	_floor.set_shader_parameter("grid_emission", 0.07)
-	_block = _block_material(Color(0.24, 0.22, 0.21), 1.0)
-	_bridge = _block_material(Color(0.19, 0.17, 0.16), 1.0)
-	_dark = _block_material(Color(0.13, 0.12, 0.11), 0.8)
-	_pit_wall = _block_material(Color(0.42, 0.4, 0.38), 1.0)
+	# White cracked concrete everywhere; slightly darker walkways so levels read apart.
+	_floor = _concrete(Color(0.8, 0.795, 0.78), 0.5, 1.0, 1.15)
+	_block = _concrete(Color(0.72, 0.72, 0.71), 0.9, 0.65, 0.95)
+	_bridge = _concrete(Color(0.56, 0.56, 0.55), 0.9, 0.6, 1.0)
+	_dark = _concrete(Color(0.5, 0.5, 0.5), 0.3, 0.4, 0.9)
+	_pit_wall = _concrete(Color(0.7, 0.66, 0.62), 0.6, 0.8, 0.9)
 	_pit_wall.set_shader_parameter("edge_color", Color(1.0, 0.62, 0.35))
-	_pit_wall.set_shader_parameter("seam_size", 1.5)
-	_pit_wall.set_shader_parameter("seam_strength", 0.1)
 	_lamp = StandardMaterial3D.new()
 	_lamp.albedo_color = Color(0.95, 0.95, 0.92)
 	_lamp.emission_enabled = true
@@ -107,45 +115,54 @@ func _environment() -> void:
 	sky.sky_material = sky_material
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.75, 0.68, 0.61)
-	env.ambient_light_energy = 0.42
-	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.tonemap_exposure = 1.05
+	# Overcast light: most of the illumination comes softly from the whole sky.
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_energy = 0.22
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+	env.tonemap_mode = Environment.TONE_MAPPER_AGX
+	env.tonemap_exposure = 0.82
 	env.glow_enabled = true
-	env.glow_intensity = 0.86
-	env.glow_strength = 1.0
-	env.glow_bloom = 0.08
-	env.glow_hdr_threshold = 0.9
-	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
+	env.glow_intensity = 0.45
+	env.glow_strength = 1.1
+	env.glow_bloom = 0.06
+	env.glow_hdr_threshold = 1.05
+	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
 	env.ssao_enabled = true
-	env.ssao_radius = 1.4
+	env.ssao_radius = 1.6
 	env.ssao_intensity = 2.2
-	env.ssao_power = 1.6
+	env.ssao_power = 1.4
+	# Milky distance haze that swallows the far towers, thicker low down so the
+	# void under the arena fills with white mist.
 	env.fog_enabled = true
-	env.fog_mode = Environment.FOG_MODE_DEPTH
-	env.fog_light_color = Color.BLACK
-	env.fog_density = 1.0
-	env.fog_depth_begin = 95.0
-	env.fog_depth_end = 340.0
-	env.fog_depth_curve = 1.4
-	env.fog_height = -50.0
-	env.fog_height_density = 0.2
-	env.fog_sky_affect = 0.0
-	# Thin warm scattering reveals the distant backlight and monolith shadows
-	# while leaving the compact playable arena clear.
+	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
+	env.fog_light_color = Color(0.86, 0.87, 0.88)
+	env.fog_light_energy = 1.0
+	env.fog_sun_scatter = 0.25
+	env.fog_density = 0.0045
+	env.fog_height = -1.0
+	env.fog_height_density = 0.06
+	env.fog_sky_affect = 0.55
+	env.fog_aerial_perspective = 0.25
+	# Thin sunlit volumetric haze for soft light shafts and that dusty glow.
 	env.volumetric_fog_enabled = true
-	env.volumetric_fog_density = 0.00075
-	env.volumetric_fog_albedo = Color(0.54, 0.52, 0.47)
-	env.volumetric_fog_ambient_inject = 0.0
+	env.volumetric_fog_density = 0.0028
+	env.volumetric_fog_albedo = Color(0.95, 0.94, 0.92)
+	env.volumetric_fog_emission = Color(0.0, 0.0, 0.0)
+	env.volumetric_fog_ambient_inject = 0.15
 	env.volumetric_fog_gi_inject = 0.0
-	env.volumetric_fog_anisotropy = 0.67
-	env.volumetric_fog_length = 300.0
-	env.volumetric_fog_sky_affect = 1.0
+	env.volumetric_fog_anisotropy = 0.55
+	env.volumetric_fog_length = 120.0
+	env.volumetric_fog_sky_affect = 0.0
 	env.volumetric_fog_temporal_reprojection_enabled = true
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 0.9
+	env.adjustment_contrast = 1.1
 	var world := WorldEnvironment.new()
 	world.environment = env
 	add_child(world)
+	var dust := DustField.new()
+	dust.name = "Dust"
+	add_child(dust)
 
 
 # --- Building blocks ---------------------------------------------------------------
@@ -416,43 +433,35 @@ func _link(from: Vector3, to: Vector3) -> void:
 
 
 func _lighting() -> void:
-	# Warm light in the distant fog, with no visible sun or circular meshes.
-	var backlight := DirectionalLight3D.new()
-	backlight.name = "DistantBacklight"
-	backlight.position = Vector3(170.0, 300.0, -245.0)
-	backlight.light_color = Color(1.0, 0.75, 0.55)
-	backlight.light_energy = 0.7
-	backlight.light_volumetric_fog_energy = 8.0
-	backlight.shadow_enabled = true
-	backlight.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	backlight.directional_shadow_max_distance = 320.0
-	backlight.shadow_blur = 2.0
-	add_child(backlight)
-	# DirectionalLight3D uses orientation, not its position, for illumination.
-	backlight.look_at(Vector3(0.0, 140.0, 0.0), Vector3.UP)
-
+	# High, slightly warm sun behind the haze: soft shadows and gentle light shafts.
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-58, -28, 0)
-	sun.light_color = Color(1.0, 0.94, 0.87)
-	sun.light_energy = 0.8
-	sun.light_volumetric_fog_energy = 0.0
+	sun.name = "Sun"
+	sun.rotation_degrees = Vector3(-52, -38, 0)
+	sun.light_color = Color(1.0, 0.97, 0.91)
+	sun.light_energy = 2.2
+	sun.light_angular_distance = 2.5
+	sun.light_volumetric_fog_energy = 1.4
 	sun.shadow_enabled = true
-	sun.shadow_blur = 1.5
-	sun.directional_shadow_max_distance = 90.0
+	sun.shadow_blur = 2.2
+	sun.shadow_opacity = 1.0
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	sun.directional_shadow_max_distance = 140.0
 	add_child(sun)
+	# Cool bounce from the opposite side keeps the shadowed faces soft and readable.
 	var fill := DirectionalLight3D.new()
-	fill.rotation_degrees = Vector3(-25, 150, 0)
-	fill.light_color = Color(0.7, 0.75, 0.85)
-	fill.light_energy = 0.18
+	fill.name = "SkyFill"
+	fill.rotation_degrees = Vector3(-30, 140, 0)
+	fill.light_color = Color(0.82, 0.86, 0.93)
+	fill.light_energy = 0.32
 	fill.light_volumetric_fog_energy = 0.0
 	add_child(fill)
 	for at in [Vector3(-11, 4.0, -11), Vector3(11, 4.0, 11), Vector3(-11, 4.0, 11), Vector3(11, 4.0, -11)]:
 		var light := OmniLight3D.new()
 		light.position = at
-		light.light_color = Color(0.95, 0.95, 1.0)
-		light.light_energy = 0.7
+		light.light_color = Color(1.0, 0.98, 0.95)
+		light.light_energy = 0.5
 		light.light_volumetric_fog_energy = 0.0
-		light.omni_range = 9.0
+		light.omni_range = 8.0
 		add_child(light)
 
 
