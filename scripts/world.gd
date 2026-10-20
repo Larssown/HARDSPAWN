@@ -120,8 +120,12 @@ func _try_take(pl: Player, pk: PickupNode) -> bool:
 	var ar := pl.armor
 	match pk.kind:
 		"weapon":
+			# Picking up a weapon always fills it to full ammo; already-full players leave it.
 			if pl.has_weapon(pk.weapon_id):
-				return false
+				if pl.ammo[pk.weapon_id] >= Weapons.AMMO_CAPACITY[pk.weapon_id]:
+					return false
+				_grant_ammo.rpc(pl.peer_id, pk.weapon_id, Weapons.AMMO_CAPACITY[pk.weapon_id])
+				return true
 			_grant_weapon.rpc(pl.peer_id, pk.weapon_id)
 			return true
 		"ammo":

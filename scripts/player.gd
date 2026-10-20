@@ -257,7 +257,7 @@ func grant_weapon(i: int) -> void:
 	if i < 0 or i >= Weapons.LIST.size() or has_weapon(i):
 		return
 	owned_weapons |= 1 << i
-	add_ammo(i, Weapons.WEAPON_PICKUP_AMMO[i])
+	add_ammo(i, Weapons.AMMO_CAPACITY[i])
 	last_weapon = weapon
 	weapon = i
 	cooldown = maxf(cooldown, 0.15)
@@ -420,7 +420,8 @@ func _fire() -> void:
 		if weapon != Weapons.MG and ammo[Weapons.MG] > 0:
 			select_weapon(Weapons.MG)
 		return
-	ammo[weapon] -= 1
+	if weapon != Weapons.MG:  # the machinegun never runs out
+		ammo[weapon] -= 1
 	cooldown = w.cooldown
 	var origin := head.global_position
 	var aim := -head.global_basis.z

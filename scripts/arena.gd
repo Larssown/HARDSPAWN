@@ -355,7 +355,7 @@ func _geometry() -> void:
 
 	# Low cover blocks.
 	for at in [Vector3(-23, 1.0, 10), Vector3(23, 1.0, -10),
-			Vector3(-4, 1.0, -23), Vector3(4, 1.0, 23),
+			Vector3(0, 1.0, -20), Vector3(0, 1.0, 20),  # moved: health and a spawn sat inside them
 			Vector3(-23, 1.0, -15), Vector3(23, 1.0, 15)]:
 		_box(at, Vector3(2.7, 2.0, 2.7), _block)
 
@@ -647,6 +647,4 @@ func _gameplay_points() -> void:
 	for pos in [Vector3(-23, 0, -3), Vector3(23, 0, 3),
 			Vector3(-3, 0, -23), Vector3(3, 0, 23)]:
 		_pickup("health", pos)
-	for pos in [Vector3(-19, 0, 13), Vector3(19, 0, -13),
-			Vector3(1, 0, -25), Vector3(-1, 0, 25)]:
-		_pickup("ammo", pos, Weapons.MG)
+	# No ammo boxes: the machinegun has infinite ammo, other weapons refill when picked up.

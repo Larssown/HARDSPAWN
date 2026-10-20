@@ -399,7 +399,8 @@ func _process(delta: float) -> void:
 	lbl_armor.text = str(int(ceil(player.armor)))
 	lbl_armor.get_parent().visible = player.armor > 0.0
 	var w: Dictionary = Weapons.LIST[player.weapon]
-	lbl_weapon.text = "%s  %d" % [w.name, player.ammo[player.weapon]]
+	var ammo_text := "∞" if player.weapon == Weapons.MG else str(player.ammo[player.weapon])
+	lbl_weapon.text = "%s  %s" % [w.name, ammo_text]
 	lbl_weapon.add_theme_color_override("font_color", w.color)
 	for i in weapon_slots.size():
 		var alpha := 1.0 if i == player.weapon else (0.6 if player.has_weapon(i) else 0.18)
