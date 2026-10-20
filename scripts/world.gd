@@ -120,11 +120,13 @@ func _try_take(pl: Player, pk: PickupNode) -> bool:
 	var ar := pl.armor
 	match pk.kind:
 		"weapon":
-			# Picking up a weapon always fills it to full ammo; already-full players leave it.
+			# A weapon pickup is a full load (10 / 6 / 5). Walking over it again tops you
+			# back up to a full load; if you already have that much it stays for others.
+			var load: int = Weapons.WEAPON_PICKUP_AMMO[pk.weapon_id]
 			if pl.has_weapon(pk.weapon_id):
-				if pl.ammo[pk.weapon_id] >= Weapons.AMMO_CAPACITY[pk.weapon_id]:
+				if pl.ammo[pk.weapon_id] >= load:
 					return false
-				_grant_ammo.rpc(pl.peer_id, pk.weapon_id, Weapons.AMMO_CAPACITY[pk.weapon_id])
+				_grant_ammo.rpc(pl.peer_id, pk.weapon_id, load - pl.ammo[pk.weapon_id])
 				return true
 			_grant_weapon.rpc(pl.peer_id, pk.weapon_id)
 			return true

@@ -257,7 +257,7 @@ func grant_weapon(i: int) -> void:
 	if i < 0 or i >= Weapons.LIST.size() or has_weapon(i):
 		return
 	owned_weapons |= 1 << i
-	add_ammo(i, Weapons.AMMO_CAPACITY[i])
+	add_ammo(i, Weapons.WEAPON_PICKUP_AMMO[i])
 	last_weapon = weapon
 	weapon = i
 	cooldown = maxf(cooldown, 0.15)
