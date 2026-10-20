@@ -3,6 +3,25 @@ extends CanvasLayer
 ## In-game overlay: crosshair, health/armor, weapon, timer, frags, kill feed,
 ## scoreboard (hold Tab), pause menu (Esc) and the end-of-match screen.
 
+const WEAPON_FILMS := [
+	"res://movie/MGgun.ogv",
+	"res://movie/SGgun.ogv",
+	"res://movie/RLgun.ogv",
+	"res://movie/RGgun.ogv",
+]
+const WEAPON_IMAGES := [
+	preload("res://image/MG.png"),
+	preload("res://image/SG.png"),
+	preload("res://image/RL.png"),
+	preload("res://image/RG.png"),
+]
+const WEAPON_CROPS := [
+	Rect2(75, 132, 1210, 505),
+	Rect2(78, 167, 1205, 462),
+	Rect2(197, 86, 975, 606),
+	Rect2(111, 198, 1165, 410),
+]
+
 class Crosshair extends Control:
 	var hit_t := 0.0
 	var hit_power := 0.0
@@ -32,7 +51,10 @@ var vignette: ColorRect
 var lbl_health: Label
 var lbl_armor: Label
 var lbl_weapon: Label
-var weapon_slots: Array[Label] = []
+var weapon_video: VideoStreamPlayer
+var weapon_fallback: TextureRect
+var weapon_slots: Array[PanelContainer] = []
+var _displayed_weapon := -1
 var lbl_timer: Label
 var lbl_frags: Label
 var lbl_rank: Label
@@ -85,21 +107,7 @@ func _ready() -> void:
 	lbl_health = _label(_box(vitals), "100", 50, Color.WHITE)
 	lbl_armor = _label(_box(vitals, Color(1.0, 0.8, 0.35, 0.85)), "0", 30, Color(1.0, 0.82, 0.4))
 
-	# Bottom right: weapon
-	var wpanel := _box(root)
-	_anchor(wpanel, 1.0, 1.0, Vector2(-28, -28), Control.GROW_DIRECTION_BEGIN, Control.GROW_DIRECTION_BEGIN)
-	var wbox := VBoxContainer.new()
-	wbox.alignment = BoxContainer.ALIGNMENT_END
-	wbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	wpanel.add_child(wbox)
-	lbl_weapon = _label(wbox, "", 24, Color.WHITE)
-	lbl_weapon.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	var slots := HBoxContainer.new()
-	slots.alignment = BoxContainer.ALIGNMENT_END
-	slots.add_theme_constant_override("separation", 14)
-	wbox.add_child(slots)
-	for i in Weapons.LIST.size():
-		weapon_slots.append(_label(slots, "%d %s" % [i + 1, Weapons.LIST[i].short], 16, Color.WHITE))
+	_build_weapon_hud()
 
 	# Top: timer, frags, rank
 	var tpanel := _box(root)
@@ -148,6 +156,123 @@ func _ready() -> void:
 
 func bind_player(p: Player) -> void:
 	player = p
+	_show_weapon(player.weapon)
+
+
+func _exit_tree() -> void:
+	if is_instance_valid(weapon_video):
+		weapon_video.stop()
+		weapon_video.stream = null
+
+
+func _build_weapon_hud() -> void:
+	var dock := HBoxContainer.new()
+	dock.name = "WeaponDock"
+	dock.add_theme_constant_override("separation", 8)
+	dock.alignment = BoxContainer.ALIGNMENT_END
+	_anchor(dock, 1.0, 1.0, Vector2(-24, -22), Control.GROW_DIRECTION_BEGIN, Control.GROW_DIRECTION_BEGIN)
+	root.add_child(dock)
+
+	var gray_shader := Shader.new()
+	gray_shader.code = "shader_type canvas_item;\n" + \
+		"void fragment() {\n" + \
+		"  vec4 source = texture(TEXTURE, UV);\n" + \
+		"  float lightness = dot(source.rgb, vec3(0.299, 0.587, 0.114));\n" + \
+		"  COLOR = vec4(vec3(min(lightness * 1.25, 1.0)), smoothstep(0.05, 0.35, lightness) * 0.85);\n" + \
+		"}\n"
+	var gray_material := ShaderMaterial.new()
+	gray_material.shader = gray_shader
+	for i in Weapons.LIST.size():
+		var slot := PanelContainer.new()
+		slot.name = "WeaponSlot%d" % (i + 1)
+		slot.custom_minimum_size = Vector2(76, 70)
+		slot.size_flags_vertical = Control.SIZE_SHRINK_END
+		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.01, 0.015, 0.025, 0.92)
+		style.border_color = Color(0.73, 0.76, 0.78, 0.36)
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(5)
+		style.set_content_margin_all(4)
+		slot.add_theme_stylebox_override("panel", style)
+		dock.add_child(slot)
+		weapon_slots.append(slot)
+		var stack := VBoxContainer.new()
+		stack.add_theme_constant_override("separation", 0)
+		slot.add_child(stack)
+		var crop := AtlasTexture.new()
+		crop.atlas = WEAPON_IMAGES[i]
+		crop.region = WEAPON_CROPS[i]
+		var icon := TextureRect.new()
+		icon.texture = crop
+		icon.material = gray_material
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.custom_minimum_size = Vector2(66, 42)
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		stack.add_child(icon)
+		var key := _label(stack, "%d  %s" % [i + 1, Weapons.LIST[i].short], 13, Color(0.9, 0.92, 0.94))
+		key.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	var stage := Control.new()
+	stage.name = "ActiveWeapon"
+	stage.custom_minimum_size = Vector2(320, 180)
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dock.add_child(stage)
+	var stage_back := PanelContainer.new()
+	stage_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var back_style := StyleBoxFlat.new()
+	back_style.bg_color = Color(0.01, 0.015, 0.025, 0.72)
+	back_style.border_color = Color(1.0, 0.43, 0.28, 0.36)
+	back_style.set_border_width_all(1)
+	back_style.set_corner_radius_all(6)
+	stage_back.add_theme_stylebox_override("panel", back_style)
+	stage.add_child(stage_back)
+	_fill(stage_back)
+	weapon_fallback = TextureRect.new()
+	weapon_fallback.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	weapon_fallback.stretch_mode = TextureRect.STRETCH_SCALE
+	var glow_material := CanvasItemMaterial.new()
+	glow_material.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	weapon_fallback.material = glow_material
+	weapon_fallback.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(weapon_fallback)
+	_fill(weapon_fallback)
+	weapon_video = VideoStreamPlayer.new()
+	weapon_video.name = "AnimatedWeapon"
+	weapon_video.expand = true
+	weapon_video.loop = true
+	weapon_video.volume_db = -80.0
+	weapon_video.material = glow_material
+	weapon_video.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(weapon_video)
+	_fill(weapon_video)
+	lbl_weapon = _label(stage, "", 18, Color.WHITE)
+	lbl_weapon.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_anchor(lbl_weapon, 1.0, 1.0, Vector2(-4, -2), Control.GROW_DIRECTION_BEGIN, Control.GROW_DIRECTION_BEGIN)
+	_show_weapon(Weapons.MG)
+
+
+func _fill(control: Control) -> void:
+	control.anchor_left = 0.0
+	control.anchor_right = 1.0
+	control.anchor_top = 0.0
+	control.anchor_bottom = 1.0
+
+
+func _show_weapon(index: int) -> void:
+	if index == _displayed_weapon or index < 0 or index >= WEAPON_FILMS.size():
+		return
+	_displayed_weapon = index
+	for i in weapon_slots.size():
+		weapon_slots[i].visible = i != index
+	weapon_video.stop()
+	weapon_video.stream = load(WEAPON_FILMS[index]) as VideoStream
+	weapon_fallback.texture = WEAPON_IMAGES[index]
+	weapon_video.visible = weapon_video.stream != null
+	weapon_fallback.visible = not weapon_video.visible
+	if weapon_video.visible:
+		weapon_video.play()
 
 
 func _anchor(c: Control, ax: float, ay: float, offset: Vector2, gh: Control.GrowDirection, gv: Control.GrowDirection) -> void:
@@ -400,11 +525,11 @@ func _process(delta: float) -> void:
 	lbl_armor.get_parent().visible = player.armor > 0.0
 	var w: Dictionary = Weapons.LIST[player.weapon]
 	var ammo_text := "∞" if player.weapon == Weapons.MG else str(player.ammo[player.weapon])
-	lbl_weapon.text = "%s  %s" % [w.name, ammo_text]
-	lbl_weapon.add_theme_color_override("font_color", w.color)
+	_show_weapon(player.weapon)
+	lbl_weapon.text = "%s   %s" % [w.short, ammo_text]
+	lbl_weapon.add_theme_color_override("font_color", Color(1.0, 0.82, 0.63))
 	for i in weapon_slots.size():
-		var alpha := 1.0 if i == player.weapon else (0.6 if player.has_weapon(i) else 0.18)
-		weapon_slots[i].modulate = Color(1, 1, 1, alpha)
+		weapon_slots[i].modulate.a = 0.82 if player.has_weapon(i) else 0.25
 
 	var ups := Vector2(player.velocity.x, player.velocity.z).length() * 39.37
 	lbl_speed.text = "%d ups" % int(ups)
