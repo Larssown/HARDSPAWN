@@ -425,13 +425,14 @@ func _fire() -> void:
 	cooldown = w.cooldown
 	var origin := head.global_position
 	var aim := -head.global_basis.z
-	var muzzle := get_muzzle_position()
+	# With no first-person gun, visible shot effects start on the sight line.
+	var shot_start := origin + aim * 0.3
 	if viewmodel_overlay:
 		viewmodel_overlay.kick(w.kick)
 		viewmodel_overlay.flash()
 		_shake = maxf(_shake, 0.05 * float(w.kick))
 	if w.type == "rocket":
-		Game.world.fire_rocket(peer_id, origin + aim * 0.3, aim)
+		Game.world.fire_rocket(peer_id, shot_start, aim)
 		if viewmodel:
 			Sfx.play_2d(w.sfx, w.vol)
 		else:
@@ -475,7 +476,7 @@ func _fire() -> void:
 			dmg_by_victim[victim.peer_id] = previous
 	for vid in dmg_by_victim:
 		_deal(vid, dmg_by_victim[vid].damage, dmg_by_victim[vid].headshot)
-	Game.world.shot_fx(peer_id, weapon, muzzle, ends)
+	Game.world.shot_fx(peer_id, weapon, shot_start, ends)
 
 
 func _deal(victim_id: int, dmg: float, headshot: bool) -> void:
@@ -483,12 +484,6 @@ func _deal(victim_id: int, dmg: float, headshot: bool) -> void:
 		Game.server_damage(victim_id, peer_id, dmg, weapon, Vector3.ZERO, headshot)
 	else:
 		Game.report_hit(victim_id, dmg, weapon, headshot)
-
-
-func get_muzzle_position() -> Vector3:
-	if viewmodel:
-		return viewmodel.get_muzzle()
-	return gun_pivot.global_position + gun_pivot.global_basis * Vector3(0, 0, -0.7)
 
 
 func flash_muzzle() -> void:
