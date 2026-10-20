@@ -22,6 +22,7 @@ var _rocket_counter := 0
 
 
 func _ready() -> void:
+	Music.play("ingame", 2.0)
 	arena = Arena.new()
 	arena.name = "Arena"
 	add_child(arena)

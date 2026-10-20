@@ -38,6 +38,7 @@ func _ready() -> void:
 	Game.menu_message = ""
 	Game.menu_status.connect(_on_menu_status)
 	_listening = udp.bind(Game.DISCOVERY_PORT) == OK
+	Music.play("menu", 1.0)
 
 
 func _exit_tree() -> void:
@@ -326,6 +327,11 @@ func _build_settings(body: VBoxContainer) -> void:
 	_slider(grid, "Volume", 0.0, 1.0, 0.05, float(Game.settings.volume), "%.2f",
 		func(value: float):
 			Game.settings.volume = value
+			Game.apply_settings()
+			Game.save_settings())
+	_slider(grid, "Music", 0.0, 1.0, 0.05, float(Game.settings.music), "%.2f",
+		func(value: float):
+			Game.settings.music = value
 			Game.apply_settings()
 			Game.save_settings())
 	var hint := _field(grid, "Controls")

@@ -20,6 +20,7 @@ config/icon="res://assets/branding/hardspawn_emblem.png"
 
 Game="*res://scripts/game.gd"
 Sfx="*res://scripts/sfx.gd"
+Music="*res://scripts/music.gd"
 
 [display]
 
