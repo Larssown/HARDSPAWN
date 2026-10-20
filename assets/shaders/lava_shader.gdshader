@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded, cull_disabled;
+render_mode unshaded, cull_disabled, fog_disabled;
 
 // Texture-free, low-cost flowing lava. The HDR emission is picked up by
 // WorldEnvironment glow; no texture import or noise resource is required.
@@ -8,6 +8,8 @@ uniform vec4 hot_color : source_color = vec4(0.95, 0.13, 0.008, 1.0);
 uniform vec4 core_color : source_color = vec4(1.0, 0.52, 0.04, 1.0);
 uniform float flow_speed : hint_range(0.01, 1.0) = 0.18;
 uniform float emission_strength : hint_range(0.0, 12.0) = 4.0;
+// Unshaded output is multiplied by this so the lava glows (HDR) through bright haze.
+uniform float hdr_boost : hint_range(0.5, 8.0) = 1.0;
 
 float hash21(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -47,6 +49,6 @@ void fragment() {
 		abs(distance_to_bubble - phase * 0.32))) * (1.0 - phase) * heat;
 	lava = mix(lava, hot_color.rgb, ring * 0.55);
 
-	ALBEDO = lava;
+	ALBEDO = lava * hdr_boost;
 	EMISSION = lava * emission_strength * (0.16 + heat * 0.92 + ring * 0.65);
 }

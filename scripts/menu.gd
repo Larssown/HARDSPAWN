@@ -334,6 +334,11 @@ func _build_settings(body: VBoxContainer) -> void:
 			Game.settings.music = value
 			Game.apply_settings()
 			Game.save_settings())
+	_option(grid, "Fog", ["ON", "OFF (FASTER)"], 0 if bool(Game.settings.fog) else 1,
+		func(index: int):
+			Game.settings.fog = index == 0
+			Game.apply_settings()
+			Game.save_settings())
 	var hint := _field(grid, "Controls")
 	_label(hint, "WASD  MOVE   •   SPACE  JUMP\nMOUSE  AIM   •   CLICK  FIRE", 14, MUTED)
 

@@ -21,10 +21,15 @@ uniform float roughness_value = 0.82;
 // Procedural cracked concrete (0 = off). Scale is cells per metre.
 uniform float crack_amount = 0.0;
 uniform float crack_scale = 1.2;
-uniform vec3 crack_color : source_color = vec3(0.4, 0.39, 0.38);
-uniform float crack_bump = 0.8;
+uniform vec3 crack_color : source_color = vec3(0.33, 0.32, 0.31);
+uniform float crack_bump = 0.45;
 uniform float hairline_amount = 0.6;
 uniform float stain_amount = 0.12;
+// Glow that increases towards the bottom (used for the lava pit walls).
+uniform vec3 heat_color : source_color = vec3(0.0);
+uniform float heat_strength = 0.0;
+uniform float heat_top = 0.0;
+uniform float heat_bottom = -4.0;
 
 instance uniform vec3 box_size = vec3(1.0);
 // 1.0 = that side is joined to a neighbouring block, so no outline is drawn there.
@@ -76,7 +81,7 @@ float vnoise(vec2 p) {
 float fbm(vec2 p) {
 	float v = 0.0;
 	float a = 0.5;
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < 3; i++) {
 		v += a * vnoise(p);
 		p = p * 2.03 + vec2(17.3, 9.1);
 		a *= 0.5;
@@ -104,8 +109,8 @@ float crack_distance(vec2 x) {
 		}
 	}
 	md = 8.0;
-	for (int j = -2; j <= 2; j++) {
-		for (int i = -2; i <= 2; i++) {
+	for (int j = -1; j <= 1; j++) {
+		for (int i = -1; i <= 1; i++) {
 			vec2 g = mg + vec2(float(i), float(j));
 			vec2 r = g + hash22(n + g) - f;
 			if (dot(mr - r, mr - r) > 0.00001) {
@@ -117,8 +122,8 @@ float crack_distance(vec2 x) {
 }
 
 // Anti-aliased crack line from a border distance; fades out instead of shimmering far away.
-float crack_line(float d, float w) {
-	float fw = max(fwidth(d), 0.0001);
+float crack_line(float d, float w, float fw) {
+	fw = max(fw, 0.0001);
 	float fade = clamp(w / (fw * 0.8), 0.0, 1.0);
 	return (1.0 - smoothstep(w - fw, w + fw, d)) * fade;
 }
@@ -184,30 +189,46 @@ void fragment() {
 	// Cracked concrete: a network of big cracks, finer hairlines in some areas,
 	// soft stains, and a little depth so the cracks catch the light.
 	float height = 0.0;
+	float cracks_out = 0.0;
 	if (crack_amount > 0.0 && !buried) {
 		vec2 cuv = face_uv + vec2(world_pos.y * 0.37, world_pos.y * 0.21) * (1.0 - wn.y);
-		vec2 warp = vec2(fbm(cuv * 0.9), fbm(cuv * 0.9 + 7.7)) - 0.5;
-		// How many pixels one metre covers: detail that would be smaller than a few
-		// pixels fades out so distant surfaces stay clean instead of grainy.
-		float px_per_m = 1.0 / max(length(fwidth(cuv)), 0.00001);
+		// Pixel footprint of one metre. Detail smaller than a few pixels is skipped
+		// entirely: distant surfaces stay clean and cost far less to draw.
+		float fw_m = max(length(fwidth(cuv)) * 0.7, 0.00001);
+		float px_per_m = 1.0 / fw_m;
 		float big_vis = smoothstep(4.0, 14.0, px_per_m / crack_scale);
-		float fine_vis = smoothstep(18.0, 45.0, px_per_m / (crack_scale * 2.7));
+		float fine_vis = smoothstep(18.0, 45.0, px_per_m / (crack_scale * 2.7)) * hairline_amount;
 		float grain_vis = smoothstep(80.0, 200.0, px_per_m);
-		float big_d = crack_distance(cuv * crack_scale + warp * 1.1) / crack_scale;
-		float width = 0.005 + 0.011 * vnoise(cuv * 3.1);
-		float big = crack_line(big_d, width);
-		// Only some cells are actually split, so the pattern feels natural.
-		float split = smoothstep(0.32, 0.55, fbm(cuv * 0.35 + 3.0));
-		big *= mix(0.25, 1.0, split) * big_vis;
-		float fine_d = crack_distance(cuv * crack_scale * 2.7 + warp * 2.0) / (crack_scale * 2.7);
-		float fine = crack_line(fine_d, 0.006) * smoothstep(0.45, 0.7, fbm(cuv * 0.6 + 11.0)) * hairline_amount * fine_vis;
+		float big = 0.0;
+		float big_d = 1.0;
+		float split = 0.0;
+		float fine = 0.0;
+		if (big_vis > 0.0) {
+			vec2 warp = vec2(fbm(cuv * 0.9), fbm(cuv * 0.9 + 7.7)) - 0.5;
+			big_d = crack_distance(cuv * crack_scale + warp * 1.1) / crack_scale;
+			float width = 0.005 + 0.011 * vnoise(cuv * 3.1);
+			// Only some cells are actually split, so the pattern feels natural.
+			split = smoothstep(0.25, 0.5, vnoise(cuv * 0.35 + 3.0));
+			big = crack_line(big_d, width, fw_m) * mix(0.25, 1.0, split) * big_vis;
+			if (fine_vis > 0.0) {
+				float mask = smoothstep(0.45, 0.7, vnoise(cuv * 0.6 + 11.0));
+				if (mask > 0.0) {
+					float fine_d = crack_distance(cuv * crack_scale * 2.7 + warp * 2.0) / (crack_scale * 2.7);
+					fine = crack_line(fine_d, 0.006, fw_m) * mask * fine_vis;
+				}
+			}
+		}
 		float cracks = clamp(big + fine * 0.7, 0.0, 1.0) * crack_amount;
 		float chip = (1.0 - smoothstep(0.0, 0.035, big_d)) * split * 0.25 * crack_amount * big_vis;
-		float stain = fbm(cuv * 0.22 + 31.0);
-		float grain = vnoise(cuv * 9.0) * 0.5 + vnoise(cuv * 23.0) * 0.5;
+		float stain = vnoise(cuv * 0.22 + 31.0) * 0.7 + vnoise(cuv * 0.61) * 0.3;
+		float grain = 0.5;
+		if (grain_vis > 0.0) {
+			grain = vnoise(cuv * 9.0) * 0.5 + vnoise(cuv * 23.0) * 0.5;
+		}
 		albedo *= 1.0 - stain_amount * smoothstep(0.45, 0.85, stain) + (grain - 0.5) * 0.05 * grain_vis;
 		albedo = mix(albedo, albedo * 0.82, chip);
 		albedo = mix(albedo, crack_color, cracks);
+		cracks_out = cracks;
 		height = -cracks - chip * 0.3 + grain * 0.04 * grain_vis;
 	}
 
@@ -228,6 +249,10 @@ void fragment() {
 	ROUGHNESS = roughness_value;
 	METALLIC = 0.0;
 	EMISSION = edge_color * edge * edge_emission + grid_color * emit_grid;
+	if (heat_strength > 0.0) {
+		float heat = smoothstep(heat_top, heat_bottom, world_pos.y);
+		EMISSION += heat_color * heat * heat * heat_strength * (1.0 - cracks_out * 0.6);
+	}
 	if (buried) {
 		ALBEDO = top_color;
 		ROUGHNESS = 1.0;

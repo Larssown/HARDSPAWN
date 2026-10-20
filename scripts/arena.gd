@@ -29,6 +29,7 @@ var _lamp: StandardMaterial3D
 var _gold: StandardMaterial3D
 ## Boxes registered per group; touching sides inside a group are drawn seamless.
 var _join_groups := {}
+var environment: Environment
 var _gate_count := 0
 
 
@@ -91,8 +92,12 @@ func _make_materials() -> void:
 	_block = _concrete(Color(0.72, 0.72, 0.71), 0.9, 0.65, 0.95)
 	_bridge = _concrete(Color(0.56, 0.56, 0.55), 0.9, 0.6, 1.0)
 	_dark = _concrete(Color(0.5, 0.5, 0.5), 0.3, 0.4, 0.9)
-	_pit_wall = _concrete(Color(0.7, 0.66, 0.62), 0.6, 0.8, 0.9)
+	_pit_wall = _concrete(Color(0.42, 0.37, 0.34), 0.6, 0.8, 0.9)
 	_pit_wall.set_shader_parameter("edge_color", Color(1.0, 0.62, 0.35))
+	_pit_wall.set_shader_parameter("heat_color", Color(1.0, 0.38, 0.08))
+	_pit_wall.set_shader_parameter("heat_strength", 3.5)
+	_pit_wall.set_shader_parameter("heat_top", -0.2)
+	_pit_wall.set_shader_parameter("heat_bottom", -4.0)
 	_lamp = StandardMaterial3D.new()
 	_lamp.albedo_color = Color(0.95, 0.95, 0.92)
 	_lamp.emission_enabled = true
@@ -139,7 +144,7 @@ func _environment() -> void:
 	env.fog_light_energy = 1.0
 	env.fog_sun_scatter = 0.25
 	env.fog_density = 0.0045
-	env.fog_height = -1.0
+	env.fog_height = -9.0
 	env.fog_height_density = 0.06
 	env.fog_sky_affect = 0.55
 	env.fog_aerial_perspective = 0.25
@@ -160,9 +165,21 @@ func _environment() -> void:
 	var world := WorldEnvironment.new()
 	world.environment = env
 	add_child(world)
+	environment = env
+	apply_fog(bool(Game.settings.get("fog", true)))
 	var dust := DustField.new()
 	dust.name = "Dust"
 	add_child(dust)
+
+
+## Settings toggle "Fog". Off: no volumetric haze and only a light distance fade,
+## for slower computers (the far towers still fade out a little).
+func apply_fog(on: bool) -> void:
+	if environment == null:
+		return
+	environment.volumetric_fog_enabled = on
+	environment.fog_density = 0.0045 if on else 0.0018
+	environment.fog_height_density = 0.06 if on else 0.0
 
 
 # --- Building blocks ---------------------------------------------------------------
@@ -484,10 +501,18 @@ func _hazards() -> void:
 	# Brighter, more orange lava like the concept image.
 	var lava := lava_pit.get_node("Surface") as MeshInstance3D
 	var lava_mat := lava.material_override as ShaderMaterial
-	lava_mat.set_shader_parameter("crust_color", Color(0.55, 0.07, 0.01))
-	lava_mat.set_shader_parameter("hot_color", Color(1.0, 0.33, 0.05))
-	lava_mat.set_shader_parameter("core_color", Color(1.0, 0.72, 0.32))
-	lava_mat.set_shader_parameter("emission_strength", 4.5)
+	lava_mat.set_shader_parameter("crust_color", Color(0.75, 0.1, 0.01))
+	lava_mat.set_shader_parameter("hot_color", Color(1.0, 0.36, 0.04))
+	lava_mat.set_shader_parameter("core_color", Color(1.0, 0.78, 0.35))
+	lava_mat.set_shader_parameter("emission_strength", 6.0)
+	# Strong HDR glow that punches through the white haze (the lava ignores fog).
+	lava_mat.set_shader_parameter("hdr_boost", 3.2)
+	# More and brighter embers rising out of the pit.
+	var embers := lava_pit.get_node_or_null("Embers") as GPUParticles3D
+	if embers:
+		embers.amount = 110
+		embers.lifetime = 2.2
+		embers.visibility_aabb = AABB(Vector3(-7, -1, -7), Vector3(14, 12, 14))
 	# Pit walls catch the lava's light, like the concept image.
 	# A thin tiled skin just in front of the floor's edge, full height, so the
 	# whole wall glows evenly (2 cm gap: no overlapping faces, no flicker).
@@ -498,15 +523,17 @@ func _hazards() -> void:
 	var spill := OmniLight3D.new()
 	spill.position = Vector3(0, 1.0, 0)
 	spill.light_color = Color(1.0, 0.42, 0.12)
-	spill.light_energy = 2.6
-	spill.omni_range = 18.0
-	spill.omni_attenuation = 1.4
+	spill.light_energy = 5.0
+	spill.omni_range = 20.0
+	spill.omni_attenuation = 1.3
+	spill.light_volumetric_fog_energy = 6.0  # glowing orange heat haze above the pit
 	add_child(spill)
 	var pit_fill := OmniLight3D.new()
 	pit_fill.position = Vector3(0, -2.2, 0)
 	pit_fill.light_color = Color(1.0, 0.45, 0.15)
-	pit_fill.light_energy = 3.0
-	pit_fill.omni_range = 10.0
+	pit_fill.light_energy = 7.0
+	pit_fill.omni_range = 11.0
+	pit_fill.light_volumetric_fog_energy = 3.0
 	add_child(pit_fill)
 	# A lower fallback catches falls outside the platform perimeter.
 	_zone(Vector3(0, -13.0, 0), Vector3(160, 17, 160))

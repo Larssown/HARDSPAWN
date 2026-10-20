@@ -30,7 +30,7 @@ const COLORS := [
 	Color(0.75, 0.4, 1.0), Color(1.0, 0.5, 0.15), Color(0.3, 1.0, 0.85), Color(0.95, 0.95, 0.95),
 ]
 
-var settings := {"name": "Player", "sensitivity": 0.12, "fov": 100.0, "fps_cap": 30, "volume": 0.8, "music": 0.5}
+var settings := {"name": "Player", "sensitivity": 0.12, "fov": 100.0, "fps_cap": 30, "volume": 0.8, "music": 0.5, "fog": true}
 var match_cfg := {"bots": 3, "difficulty": 1, "time_limit": 600}
 ## id -> {name, kills, deaths, bot, color}. Bots have negative ids.
 var players: Dictionary = {}
@@ -119,6 +119,8 @@ func apply_settings() -> void:
 	var music := get_node_or_null("/root/Music")
 	if music:
 		music.apply_volume()
+	if world and world.arena:
+		world.arena.apply_fog(bool(settings.fog))
 
 
 func save_settings() -> void:

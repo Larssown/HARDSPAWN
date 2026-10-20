@@ -21,7 +21,7 @@ func build() -> void:
 	add_child(surface)
 	var rim_material := StandardMaterial3D.new()
 	rim_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	rim_material.albedo_color = Color(0.75, 0.08, 0.005)
+	rim_material.albedo_color = Color(1.0, 0.45, 0.08)
 	rim_material.emission_enabled = true
 	rim_material.emission = Color(1.0, 0.15, 0.01)
 	rim_material.emission_energy_multiplier = 3.4
