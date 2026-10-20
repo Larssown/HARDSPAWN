@@ -425,14 +425,17 @@ func _fire() -> void:
 	cooldown = w.cooldown
 	var origin := head.global_position
 	var aim := -head.global_basis.z
-	# With no first-person gun, visible shot effects start on the sight line.
-	var shot_start := origin + aim * 0.3
+	var right := head.global_basis.x
+	var up := head.global_basis.y
+	# Keep aiming and rockets centred, but draw hitscan effects below the sight.
+	var rocket_start := origin + aim * 0.3
+	var fx_start := origin + aim * 0.4 + right * 0.16 - up * 0.25
 	if viewmodel_overlay:
 		viewmodel_overlay.kick(w.kick)
 		viewmodel_overlay.flash()
 		_shake = maxf(_shake, 0.05 * float(w.kick))
 	if w.type == "rocket":
-		Game.world.fire_rocket(peer_id, shot_start, aim)
+		Game.world.fire_rocket(peer_id, rocket_start, aim)
 		if viewmodel:
 			Sfx.play_2d(w.sfx, w.vol)
 		else:
@@ -440,8 +443,6 @@ func _fire() -> void:
 		return
 
 	var space := get_world_3d().direct_space_state
-	var right := head.global_basis.x
-	var up := head.global_basis.y
 	var spread: float = w.spread
 	var max_range: float = w.range
 	var ends := PackedVector3Array()
@@ -476,7 +477,7 @@ func _fire() -> void:
 			dmg_by_victim[victim.peer_id] = previous
 	for vid in dmg_by_victim:
 		_deal(vid, dmg_by_victim[vid].damage, dmg_by_victim[vid].headshot)
-	Game.world.shot_fx(peer_id, weapon, shot_start, ends)
+	Game.world.shot_fx(peer_id, weapon, fx_start, ends)
 
 
 func _deal(victim_id: int, dmg: float, headshot: bool) -> void:

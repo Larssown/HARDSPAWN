@@ -240,7 +240,13 @@ func _do_shot_fx(shooter_id: int, weapon: int, from: Vector3, ends: PackedVector
 			if i % 2 == 0:
 				Fx.impact(fx_root, e, col)
 		else:
-			Fx.tracer(fx_root, from, e, col)
+			# Rapid local machinegun trails can form an almost continuous line
+			# through the crosshair. Keep short intermittent streaks nearby.
+			if not is_local or weapon != Weapons.MG or randf() < 0.35:
+				var trail_end := e
+				if is_local and weapon == Weapons.MG:
+					trail_end = from + (e - from).limit_length(6.0)
+				Fx.tracer(fx_root, from, trail_end, col)
 			Fx.impact(fx_root, e, col)
 	if weapon == Weapons.SHOTGUN:
 		if is_local:
