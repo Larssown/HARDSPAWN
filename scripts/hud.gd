@@ -15,6 +15,7 @@ const WEAPON_IMAGES := [
 	preload("res://image/RL.png"),
 	preload("res://image/RG.png"),
 ]
+const KEYED_SHADER := preload("res://shaders/hud_keyed.gdshader")
 const WEAPON_CROPS := [
 	Rect2(75, 132, 1210, 505),
 	Rect2(78, 167, 1205, 462),
@@ -173,28 +174,21 @@ func _build_weapon_hud() -> void:
 	_anchor(dock, 1.0, 1.0, Vector2(-24, -22), Control.GROW_DIRECTION_BEGIN, Control.GROW_DIRECTION_BEGIN)
 	root.add_child(dock)
 
-	var gray_shader := Shader.new()
-	gray_shader.code = "shader_type canvas_item;\n" + \
-		"void fragment() {\n" + \
-		"  vec4 source = texture(TEXTURE, UV);\n" + \
-		"  float lightness = dot(source.rgb, vec3(0.299, 0.587, 0.114));\n" + \
-		"  COLOR = vec4(vec3(min(lightness * 1.25, 1.0)), smoothstep(0.05, 0.35, lightness) * 0.85);\n" + \
-		"}\n"
+	# No boxes: the weapon art floats over the game with a soft dark halo (readable
+	# on the white arena as well as dark backgrounds).
 	var gray_material := ShaderMaterial.new()
-	gray_material.shader = gray_shader
+	gray_material.shader = KEYED_SHADER
+	gray_material.set_shader_parameter("monochrome", true)
+	gray_material.set_shader_parameter("tint", Color(0.97, 0.97, 0.97))
+	gray_material.set_shader_parameter("halo_px", 26.0)
+	gray_material.set_shader_parameter("halo_alpha", 0.6)
 	for i in Weapons.LIST.size():
 		var slot := PanelContainer.new()
 		slot.name = "WeaponSlot%d" % (i + 1)
 		slot.custom_minimum_size = Vector2(76, 70)
 		slot.size_flags_vertical = Control.SIZE_SHRINK_END
 		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.01, 0.015, 0.025, 0.92)
-		style.border_color = Color(0.73, 0.76, 0.78, 0.36)
-		style.set_border_width_all(1)
-		style.set_corner_radius_all(5)
-		style.set_content_margin_all(4)
-		slot.add_theme_stylebox_override("panel", style)
+		slot.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 		dock.add_child(slot)
 		weapon_slots.append(slot)
 		var stack := VBoxContainer.new()
@@ -219,21 +213,13 @@ func _build_weapon_hud() -> void:
 	stage.custom_minimum_size = Vector2(320, 180)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	dock.add_child(stage)
-	var stage_back := PanelContainer.new()
-	stage_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var back_style := StyleBoxFlat.new()
-	back_style.bg_color = Color(0.01, 0.015, 0.025, 0.72)
-	back_style.border_color = Color(1.0, 0.43, 0.28, 0.36)
-	back_style.set_border_width_all(1)
-	back_style.set_corner_radius_all(6)
-	stage_back.add_theme_stylebox_override("panel", back_style)
-	stage.add_child(stage_back)
-	_fill(stage_back)
 	weapon_fallback = TextureRect.new()
 	weapon_fallback.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	weapon_fallback.stretch_mode = TextureRect.STRETCH_SCALE
-	var glow_material := CanvasItemMaterial.new()
-	glow_material.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	var glow_material := ShaderMaterial.new()
+	glow_material.shader = KEYED_SHADER
+	glow_material.set_shader_parameter("halo_px", 9.0)
+	glow_material.set_shader_parameter("halo_alpha", 0.5)
 	weapon_fallback.material = glow_material
 	weapon_fallback.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(weapon_fallback)
